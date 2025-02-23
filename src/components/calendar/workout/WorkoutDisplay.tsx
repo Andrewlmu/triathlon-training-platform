@@ -1,11 +1,15 @@
 import React from 'react';
 import { X, Bike, Waves, Timer } from 'lucide-react';
-import { Workout, WorkoutSection, WorkoutInterval } from '@/types/workout';
+import { Workout } from '@/types/workout';
 
 interface WorkoutDisplayProps {
   workout: Workout;
   onClose: () => void;
 }
+
+const minutesToHours = (minutes: number): string => {
+  return (minutes / 60).toFixed(1);
+};
 
 const WorkoutDisplay: React.FC<WorkoutDisplayProps> = ({ workout, onClose }) => {
   const getWorkoutIcon = () => {
@@ -19,21 +23,9 @@ const WorkoutDisplay: React.FC<WorkoutDisplayProps> = ({ workout, onClose }) => 
     }
   };
 
-  const formatIntensity = (interval: WorkoutInterval) => {
-    const { type, value } = interval.intensity;
-    switch (type) {
-      case 'power':
-        return `${value}% FTP`;
-      case 'pace':
-        return workout.type === 'Swim' ? `${value}/100m` : `${value}/km`;
-      case 'heartrate':
-        return `${value} BPM`;
-    }
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl h-[80vh] flex flex-col">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
         <div className="p-4 border-b flex items-center justify-between">
           <div className="flex items-center gap-2">
             {getWorkoutIcon()}
@@ -44,39 +36,13 @@ const WorkoutDisplay: React.FC<WorkoutDisplayProps> = ({ workout, onClose }) => 
           </button>
         </div>
 
-        <div className="flex-1 overflow-auto p-4">
-          {workout.description && (
-            <p className="text-gray-600 mb-4">{workout.description}</p>
-          )}
-
-          <div className="space-y-6">
-            {workout.sections.map((section, sectionIndex) => (
-              <div key={sectionIndex} className="border rounded-lg p-4">
-                <h3 className="font-medium capitalize mb-2">
-                  {section.type} Section {section.repetitions > 1 && `(${section.repetitions}x)`}
-                </h3>
-                
-                <div className="space-y-3">
-                  {section.intervals.map((interval, intervalIndex) => (
-                    <div key={intervalIndex} className="bg-gray-50 rounded p-3">
-                      <div className="flex justify-between text-sm">
-                        <span>{interval.duration} minutes</span>
-                        {interval.distance && (
-                          <span>{interval.distance} {workout.type === 'Swim' ? 'm' : 'km'}</span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {formatIntensity(interval)}
-                        {interval.restDuration && ` + ${interval.restDuration}min rest`}
-                      </div>
-                      {interval.description && (
-                        <p className="text-sm text-gray-500 mt-1">{interval.description}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+        <div className="p-4">
+          <div className="mb-4 text-sm text-gray-600">
+            Duration: {minutesToHours(workout.duration)} hours
+          </div>
+          
+          <div className="prose max-w-none">
+            <pre className="whitespace-pre-wrap font-sans">{workout.description}</pre>
           </div>
         </div>
       </div>
