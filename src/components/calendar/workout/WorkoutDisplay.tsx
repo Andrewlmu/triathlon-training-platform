@@ -1,49 +1,79 @@
+"use client";
+
 import React from 'react';
-import { X, Bike, Waves, Timer } from 'lucide-react';
+import { X, Bike, Waves, Footprints } from 'lucide-react';
 import { Workout } from '@/types/workout';
 
+/**
+ * Props interface for the WorkoutDisplay component
+ */
 interface WorkoutDisplayProps {
-  workout: Workout;
-  onClose: () => void;
+  workout: Workout;        // The workout to display
+  onClose: () => void;     // Function to close the modal
 }
 
+/**
+ * Convert minutes to hours with fixed decimal format
+ * @param minutes Number of minutes
+ * @returns Formatted hours string with one decimal place
+ */
 const minutesToHours = (minutes: number): string => {
   return (minutes / 60).toFixed(1);
 };
 
+/**
+ * WorkoutDisplay Component
+ * 
+ * Modal to display detailed information about a workout.
+ * Shows title, type, duration, and full description.
+ */
 const WorkoutDisplay: React.FC<WorkoutDisplayProps> = ({ workout, onClose }) => {
+  /**
+   * Get the appropriate icon for the workout type
+   * @returns React node with the corresponding icon
+   */
   const getWorkoutIcon = () => {
     switch (workout.type) {
       case "Swim":
-        return <Waves className="h-5 w-5 text-blue-500" />;
+        return <Waves className="h-5 w-5 text-[#00CED1]" />;
       case "Bike":
-        return <Bike className="h-5 w-5 text-green-500" />;
+        return <Bike className="h-5 w-5 text-[#1E90FF]" />;
       case "Run":
-        return <Timer className="h-5 w-5 text-red-500" />;
+        return <Footprints className="h-5 w-5 text-[#E63946]" />;
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
-        <div className="p-4 border-b flex items-center justify-between">
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+      <div className="bg-[#1E1E1E] rounded-lg shadow-xl w-full max-w-2xl border border-[#333333]">
+        {/* Modal Header */}
+        <div className="p-4 border-b border-[#333333] flex items-center justify-between">
           <div className="flex items-center gap-2">
             {getWorkoutIcon()}
-            <h2 className="text-xl font-semibold">{workout.title}</h2>
+            <h2 className="text-xl font-semibold text-white">{workout.title}</h2>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button
+            onClick={onClose}
+            className="text-[#A0A0A0] hover:text-white transition"
+            aria-label="Close"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
 
+        {/* Workout Content */}
         <div className="p-4">
-          <div className="mb-4 text-sm text-gray-600">
+          {/* Duration Display */}
+          <div className="mb-4 text-[#FFD700] font-medium">
             Duration: {minutesToHours(workout.duration)} hours
           </div>
-          
-          <div className="prose max-w-none">
-            <pre className="whitespace-pre-wrap font-sans">{workout.description}</pre>
-          </div>
+
+          {/* Description (if available) */}
+          {workout.description && (
+            <div className="prose max-w-none">
+              <pre className="whitespace-pre-wrap font-sans bg-transparent text-white border-none p-0">{workout.description}</pre>
+            </div>
+          )}
         </div>
       </div>
     </div>
