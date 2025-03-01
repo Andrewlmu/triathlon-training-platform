@@ -1,9 +1,35 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useWorkoutStore, getDateKey } from '@/hooks/useWorkoutStore';
 import { Bike, Waves, Footprints, ChevronLeft, ChevronRight } from 'lucide-react';
 import { startOfWeek, endOfWeek, addWeeks, subWeeks, format, eachDayOfInterval } from 'date-fns';
+import { useWorkouts } from '@/context/WorkoutContext';
+import { Workout } from '@/types/workout';
+
+/**
+ * Interface for daily training totals
+ */
+interface DayTotals {
+  date: Date;
+  swim: number;
+  bike: number;
+  run: number;
+  total: number;
+}
+
+/**
+ * Interface for weekly training data summary
+ */
+interface WeeklyData {
+  weeklyTotals: {
+    swim: number;
+    bike: number;
+    run: number;
+    total: number;
+  };
+  dailyBreakdown: DayTotals[];
+  maxValue: number;
+}
 
 /**
  * WeeklySummary Component
@@ -15,13 +41,96 @@ const WeeklySummary = () => {
   // State to track the current week being displayed
   const [currentWeekStart, setCurrentWeekStart] = useState<Date | null>(null);
 
-  // Get workout data from the shared store
-  const { workouts } = useWorkoutStore();
+  // Create state to track calculations
+  const [weeklyData, setWeeklyData] = useState<WeeklyData>({
+    weeklyTotals: { swim: 0, bike: 0, run: 0, total: 0 },
+    dailyBreakdown: [],
+    maxValue: 1
+  });
+
+  // Get workout data from context
+  const { workouts } = useWorkouts();
 
   // Initialize week on client-side to prevent hydration errors
   useEffect(() => {
-    setCurrentWeekStart(startOfWeek(new Date()));
+    setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
   }, []);
+
+  // Recalculate weekly data whenever workouts or currentWeekStart changes
+  useEffect(() => {
+    if (!currentWeekStart) return;
+
+    const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
+    const daysOfWeek = eachDayOfInterval({ start: currentWeekStart, end: weekEnd });
+
+    // Filter workouts for this week
+    const weekWorkouts = workouts.filter(workout => {
+      const workoutDate = new Date(workout.date);
+      return workoutDate >= currentWeekStart && workoutDate <= weekEnd;
+    });
+
+    // Initialize weekly totals
+    const weeklyTotals = {
+      swim: 0,
+      bike: 0,
+      run: 0,
+      total: 0
+    };
+
+    // Initialize daily breakdown
+    const dailyBreakdown = daysOfWeek.map(day => {
+      // Filter workouts for this day
+      const dayWorkouts = weekWorkouts.filter(workout => {
+        const workoutDate = new Date(workout.date);
+        return (
+          workoutDate.getFullYear() === day.getFullYear() &&
+          workoutDate.getMonth() === day.getMonth() &&
+          workoutDate.getDate() === day.getDate()
+        );
+      });
+
+      // Calculate totals for this day
+      const dayTotals: DayTotals = {
+        date: day,
+        swim: 0,
+        bike: 0,
+        run: 0,
+        total: 0
+      };
+
+      // Process each workout for this day
+      dayWorkouts.forEach(workout => {
+        const durationHours = workout.duration / 60;
+
+        if (workout.type === 'Swim') {
+          dayTotals.swim += durationHours;
+          weeklyTotals.swim += durationHours;
+        } else if (workout.type === 'Bike') {
+          dayTotals.bike += durationHours;
+          weeklyTotals.bike += durationHours;
+        } else if (workout.type === 'Run') {
+          dayTotals.run += durationHours;
+          weeklyTotals.run += durationHours;
+        }
+
+        dayTotals.total += durationHours;
+        weeklyTotals.total += durationHours;
+      });
+
+      return dayTotals;
+    });
+
+    // Calculate max value for bar scaling
+    const maxValue = Math.max(weeklyTotals.swim, weeklyTotals.bike, weeklyTotals.run, 1);
+
+    // Update state with calculated data
+    setWeeklyData({
+      weeklyTotals,
+      dailyBreakdown,
+      maxValue
+    });
+
+  }, [workouts, currentWeekStart]);
 
   // Show loading state while initializing
   if (!currentWeekStart) {
@@ -31,82 +140,25 @@ const WeeklySummary = () => {
     </div>;
   }
 
-  // Calculate week boundaries and days
-  const weekEnd = endOfWeek(currentWeekStart);
-  const daysOfWeek = eachDayOfInterval({ start: currentWeekStart, end: weekEnd });
+  // Navigation handlers
+  const prevWeek = () => {
+    setCurrentWeekStart(prev => prev ? subWeeks(prev, 1) : null);
+  };
 
-  // Initialize weekly totals object
-  const weeklyTotals = {
-    swim: 0,
-    bike: 0,
-    run: 0,
-    total: 0
+  const nextWeek = () => {
+    setCurrentWeekStart(prev => prev ? addWeeks(prev, 1) : null);
   };
 
   /**
-   * Process daily workout data and calculate totals
-   * Maps each day of the week to a summary of its workouts
-   */
-  const dailyBreakdown = daysOfWeek.map(day => {
-    const dateKey = getDateKey(day);
-    const dayWorkouts = workouts[dateKey] || [];
-
-    // Initialize totals for this day
-    const dayTotals = {
-      date: day,
-      swim: 0,
-      bike: 0,
-      run: 0,
-      total: 0
-    };
-
-    // Process each workout and update totals
-    dayWorkouts.forEach(workout => {
-      const durationHours = workout.duration / 60;
-
-      if (workout.type === 'Swim') {
-        dayTotals.swim += durationHours;
-        weeklyTotals.swim += durationHours;
-      } else if (workout.type === 'Bike') {
-        dayTotals.bike += durationHours;
-        weeklyTotals.bike += durationHours;
-      } else if (workout.type === 'Run') {
-        dayTotals.run += durationHours;
-        weeklyTotals.run += durationHours;
-      }
-
-      dayTotals.total += durationHours;
-      weeklyTotals.total += durationHours;
-    });
-
-    return dayTotals;
-  });
-
-  /**
    * Format hours to a consistent decimal format
-   * @param hours Number of hours to format
-   * @returns Formatted string with one decimal place
    */
   const formatHours = (hours: number): string => {
     return hours.toFixed(1);
   };
 
-  // Calculate max value for scaling the bar graphs proportionally
-  const maxValue = Math.max(weeklyTotals.swim, weeklyTotals.bike, weeklyTotals.run, 1);
-
-  /**
-   * Navigate to the previous week
-   */
-  const prevWeek = () => {
-    setCurrentWeekStart(subWeeks(currentWeekStart, 1));
-  };
-
-  /**
-   * Navigate to the next week
-   */
-  const nextWeek = () => {
-    setCurrentWeekStart(addWeeks(currentWeekStart, 1));
-  };
+  // Use the pre-calculated values from state
+  const { weeklyTotals, dailyBreakdown, maxValue } = weeklyData;
+  const weekEnd = currentWeekStart ? endOfWeek(currentWeekStart, { weekStartsOn: 1 }) : new Date();
 
   return (
     <div className="bg-[#1E1E1E] rounded-lg shadow-xl border border-[#333333] p-4">

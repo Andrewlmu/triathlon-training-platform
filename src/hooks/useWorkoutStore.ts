@@ -34,6 +34,8 @@ export function useWorkoutStore(): WorkoutStore {
   const [workouts, setWorkouts] = useState<Record<string, Workout[]>>({});
   // Flag to track if initial data has been loaded from localStorage
   const [isInitialized, setIsInitialized] = useState(false);
+  // Add a version counter to force updates
+  const [version, setVersion] = useState(0);
 
   // Load workouts from localStorage on component mount (client-side only)
   useEffect(() => {
@@ -54,6 +56,13 @@ export function useWorkoutStore(): WorkoutStore {
   useEffect(() => {
     if (isInitialized && typeof window !== 'undefined') {
       localStorage.setItem('workouts', JSON.stringify(workouts));
+    }
+  }, [workouts, isInitialized]);
+
+  // Increment version with each change to workouts
+  useEffect(() => {
+    if (isInitialized) {
+      setVersion(v => v + 1);
     }
   }, [workouts, isInitialized]);
 
@@ -135,5 +144,5 @@ export function useWorkoutStore(): WorkoutStore {
     });
   };
 
-  return { workouts, addWorkout, updateWorkout, deleteWorkout, moveWorkout };
+  return { workouts, addWorkout, updateWorkout, deleteWorkout, moveWorkout, version };
 }
