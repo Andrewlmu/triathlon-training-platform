@@ -22,6 +22,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   workouts      Workout[]
+  labels      WorkoutLabel[]
   userCredential UserCredential?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -72,15 +73,28 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model WorkoutLabel {
+  id          String    @id @default(uuid())
+  name        String
+  color       String    // Hex color code
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  workouts    Workout[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
 model Workout {
-  id          String   @id @default(uuid())
-  type        String   // "Bike", "Run", "Swim"
+  id          String        @id @default(uuid())
+  type        String        // "Bike", "Run", "Swim"
   title       String
   description String?
-  duration    Int      // in minutes
+  duration    Int           // in minutes
   date        DateTime
+  labelId     String?       // Optional label
+  label       WorkoutLabel? @relation(fields: [labelId], references: [id])
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  user        User          @relation(fields: [userId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }

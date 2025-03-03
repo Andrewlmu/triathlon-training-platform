@@ -20,6 +20,7 @@ export async function GET(
     
     const workout = await prisma.workout.findUnique({
       where: { id: params.id },
+      include: { label: true } // Include the label relationship
     });
     
     if (!workout) {
@@ -88,9 +89,11 @@ export async function PATCH(
       data.date = new Date(data.date);
     }
     
+    // Update the workout with the label relationship
     const workout = await prisma.workout.update({
       where: { id: params.id },
       data,
+      include: { label: true } // Include the label in the response
     });
     
     return NextResponse.json(workout);

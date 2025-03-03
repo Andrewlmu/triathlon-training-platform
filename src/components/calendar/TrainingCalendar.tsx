@@ -7,6 +7,7 @@ import WorkoutBuilder from "./workout/WorkoutBuilder";
 import WorkoutDisplay from "./workout/WorkoutDisplay";
 import { Workout } from "@/types/workout";
 import { useWorkouts } from "@/context/WorkoutContext";
+import { useLabels } from "@/context/LabelContext";
 
 /**
  * TrainingCalendar Component
@@ -23,6 +24,7 @@ const TrainingCalendar = () => {
   
   // Get workout data and functions from context
   const { workouts, isLoading, addWorkout, updateWorkout, deleteWorkout } = useWorkouts();
+  const { labels } = useLabels();
 
   // Initialize date state
   useEffect(() => {
@@ -211,51 +213,75 @@ const TrainingCalendar = () => {
               
               {/* Workouts for this day */}
               <div className="mt-1 space-y-1.5">
-                {dayWorkouts.map((workout) => (
-                  <div 
-                    key={workout.id}
-                    className={`flex items-center justify-between text-xs p-1.5 rounded-sm ${
-                      workout.type === 'Bike' ? 'bg-[#1E90FF1A] border-l-2 border-[#1E90FF]' : 
-                      workout.type === 'Run' ? 'bg-[#E639461A] border-l-2 border-[#E63946]' : 
-                      'bg-[#00CED11A] border-l-2 border-[#00CED1]'
-                    } hover:bg-opacity-25 transition cursor-pointer group`}
-                  >
-                    {/* Workout Info - Clickable to View Details */}
+                {dayWorkouts.map((workout) => {
+                  // Find the label for this workout
+                  const workoutLabel = workout.labelId 
+                    ? labels.find(l => l.id === workout.labelId) 
+                    : null;
+                  
+                  return (
                     <div 
-                      className="flex items-center gap-1 flex-grow"
-                      onClick={() => setSelectedWorkout(workout)}
+                      key={workout.id}
+                      className={`flex items-center justify-between text-xs p-1.5 rounded-sm 
+                        ${!workoutLabel 
+                          ? `${
+                              workout.type === 'Bike' ? 'bg-[#1E90FF1A] border-l-2 border-[#1E90FF]' : 
+                              workout.type === 'Run' ? 'bg-[#E639461A] border-l-2 border-[#E63946]' : 
+                              'bg-[#00CED11A] border-l-2 border-[#00CED1]'
+                            }`
+                          : ''
+                        } 
+                        hover:bg-opacity-25 transition cursor-pointer group`}
+                      style={workoutLabel ? {
+                        backgroundColor: `${workoutLabel.color}1A`, // Add transparency
+                        borderLeftWidth: '2px',
+                        borderLeftStyle: 'solid',
+                        borderLeftColor: workoutLabel.color
+                      } : {}}
                     >
-                      {getWorkoutIcon(workout.type)}
-                      <span className="font-medium text-white">{workout.title}</span>
-                      <span className="ml-1 text-[#A0A0A0]">{formatDuration(workout.duration)}</span>
-                    </div>
-                    
-                    {/* Edit/Delete Actions */}
-                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingWorkout(workout);
-                          setSelectedDate(day);
-                        }}
-                        className="p-1 text-[#A0A0A0] hover:text-white"
-                        aria-label="Edit workout"
+                      <div 
+                        className="flex items-center gap-1 flex-grow"
+                        onClick={() => setSelectedWorkout(workout)}
                       >
-                        <Edit className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteWorkout(workout.id);
-                        }}
-                        className="p-1 text-[#A0A0A0] hover:text-[#E63946]"
-                        aria-label="Delete workout"
-                      >
-                        <Trash className="h-3 w-3" />
-                      </button>
+                        {getWorkoutIcon(workout.type)}
+                        <span className="font-medium text-white">{workout.title}</span>
+                        <span className="ml-1 text-[#A0A0A0]">{formatDuration(workout.duration)}</span>
+                        {workoutLabel && (
+                          <span 
+                            className="ml-1 px-1 rounded-sm text-[10px]" 
+                            style={{ backgroundColor: `${workoutLabel.color}33` }}
+                          >
+                            {workoutLabel.name}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingWorkout(workout);
+                            setSelectedDate(day);
+                          }}
+                          className="p-1 text-[#A0A0A0] hover:text-white"
+                          aria-label="Edit workout"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteWorkout(workout.id);
+                          }}
+                          className="p-1 text-[#A0A0A0] hover:text-[#E63946]"
+                          aria-label="Delete workout"
+                        >
+                          <Trash className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               {/* Add Workout Button */}

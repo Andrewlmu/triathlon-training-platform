@@ -1,6 +1,7 @@
 import TrainingCalendar from '@/components/calendar/TrainingCalendar';
 import WeeklySummary from '@/components/calendar/WeeklySummary';
 import Navbar from '@/components/layout/Navbar';
+import LabelManager from '@/components/labels/LabelManager';
 
 export default function Home() {
   return (
@@ -14,7 +15,13 @@ export default function Home() {
             <TrainingCalendar />
           </div>
           <div className="md:col-span-1">
-            <WeeklySummary />
+            <div className="space-y-6">
+              <WeeklySummary />
+              <div className="bg-[#1E1E1E] rounded-lg shadow-xl border border-[#333333] p-4">
+                <h2 className="text-lg font-bold text-white mb-4">Workout Labels</h2>
+                <LabelManager />
+              </div>
+            </div>
           </div>
         </div>
       </main>

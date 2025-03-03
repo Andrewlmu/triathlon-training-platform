@@ -3,62 +3,50 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Workout, WorkoutType } from '@/types/workout';
+import { useLabels } from '@/context/LabelContext';
 
-/**
- * Props interface for the WorkoutBuilder component
- */
 interface WorkoutBuilderProps {
-  date: Date;                           // The date for this workout
-  workout?: Workout | null;             // Optional existing workout for editing
-  onClose: () => void;                  // Function to close the modal
-  onSave: (workout: Workout) => void;   // Function to save the workout
+  date: Date;
+  workout?: Workout | null;
+  onClose: () => void;
+  onSave: (workout: Workout) => void;
 }
 
-/**
- * Convert hours (decimal) to minutes (integer)
- * @param hours Number of hours as a decimal
- * @returns Equivalent minutes as an integer
- */
 const hoursToMinutes = (hours: number): number => {
   return Math.round(hours * 60);
 };
 
-/**
- * Convert minutes to hours with fixed decimal format
- * @param minutes Number of minutes
- * @returns Formatted hours string with one decimal place
- */
 const minutesToHours = (minutes: number): string => {
   return (minutes / 60).toFixed(1);
 };
 
-/**
- * WorkoutBuilder Component
- * 
- * Modal component for creating new workouts or editing existing ones.
- * Handles form state and validation for workout details.
- */
 const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose, onSave }) => {
-  // Form state
   const [workoutType, setWorkoutType] = useState<WorkoutType>('Bike');
   const [title, setTitle] = useState('');
   const [durationHours, setDurationHours] = useState('');
   const [description, setDescription] = useState('');
+  const [labelId, setLabelId] = useState<string>('');
+  
+  const { labels, createDefaultLabels } = useLabels();
 
-  // Load existing workout data when editing
+  // Create default labels when component mounts
+  useEffect(() => {
+    if (labels.length === 0) {
+      createDefaultLabels();
+    }
+  }, [createDefaultLabels, labels.length]);
+
+  // Load existing workout data if editing
   useEffect(() => {
     if (workout) {
       setWorkoutType(workout.type);
       setTitle(workout.title);
       setDurationHours(minutesToHours(workout.duration));
       setDescription(workout.description);
+      setLabelId(workout.labelId || '');
     }
   }, [workout]);
 
-  /**
-   * Handle duration input with validation for numbers and decimal point
-   * @param value The input string to validate
-   */
   const handleDurationInput = (value: string) => {
     // Allow empty string and decimal point
     if (value === '' || value === '.') {
@@ -73,22 +61,20 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
     }
   };
 
-  /**
-   * Handle form submission and save the workout
-   * @param e Form submit event
-   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     const updatedWorkout: Workout = {
       id: workout?.id || Date.now().toString(),
       type: workoutType,
-      title: title.trim() || workoutType, // Default to workout type if no title provided
+      title: title.trim() || workoutType,
       description,
       duration: hoursToMinutes(parseFloat(durationHours) || 0),
       date: date.toISOString(),
+      labelId: labelId || undefined,
+      userId: workout?.userId || '',
     };
-
+    
     onSave(updatedWorkout);
     onClose();
   };
@@ -96,23 +82,16 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
       <div className="bg-[#1E1E1E] rounded-lg shadow-2xl w-full max-w-lg border border-[#333333]">
-        {/* Modal Header */}
         <div className="p-4 border-b border-[#333333] flex justify-between items-center">
           <h2 className="text-xl font-semibold text-white">
             {workout ? 'Edit Workout' : 'Add Workout'}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-[#A0A0A0] hover:text-white transition"
-            aria-label="Close"
-          >
+          <button onClick={onClose} className="text-[#A0A0A0] hover:text-white transition">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Workout Form */}
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {/* Workout Type Selection */}
           <div>
             <label className="block text-sm font-medium text-white mb-1">
               Type
@@ -121,7 +100,6 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
               value={workoutType}
               onChange={(e) => setWorkoutType(e.target.value as WorkoutType)}
               className="w-full rounded-md border border-[#333333] bg-[#252525] p-2 text-white focus:ring-[#FFD700] focus:border-[#FFD700] focus:outline-none"
-              aria-label="Workout type"
             >
               <option value="Bike">Bike</option>
               <option value="Run">Run</option>
@@ -129,7 +107,6 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
             </select>
           </div>
 
-          {/* Workout Title */}
           <div>
             <label className="block text-sm font-medium text-white mb-1">
               Title
@@ -138,13 +115,41 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-md border border-[#333333] bg-[#252525] p-2 text-white placeholder-[#666666] focus:ring-[#FFD700] focus:border-[#FFD700] focus:outline-none"
+              className="w-full rounded-md border border-[#333333] bg-[#252525] p-2 text-white focus:ring-[#FFD700] focus:border-[#FFD700] focus:outline-none"
               placeholder="e.g., Sweet Spot Intervals (optional)"
-              aria-label="Workout title"
             />
           </div>
 
-          {/* Workout Duration */}
+          <div>
+            <label className="block text-sm font-medium text-white mb-1">
+              Label
+            </label>
+            <div className="relative">
+              <select
+                value={labelId}
+                onChange={(e) => setLabelId(e.target.value)}
+                className="w-full rounded-md border border-[#333333] bg-[#252525] p-2 text-white focus:ring-[#FFD700] focus:border-[#FFD700] focus:outline-none appearance-none"
+              >
+                <option value="">No label</option>
+                {labels.map(label => (
+                  <option key={label.id} value={label.id}>
+                    {label.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                <div 
+                  className="h-4 w-4 rounded-full"
+                  style={{ 
+                    backgroundColor: labelId 
+                      ? labels.find(l => l.id === labelId)?.color || 'transparent' 
+                      : 'transparent'
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-white mb-1">
               Duration (hours)
@@ -156,11 +161,9 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
               className="w-full rounded-md border border-[#333333] bg-[#252525] p-2 text-white focus:ring-[#FFD700] focus:border-[#FFD700] focus:outline-none"
               placeholder=""
               required
-              aria-label="Workout duration in hours"
             />
           </div>
 
-          {/* Workout Details/Description */}
           <div>
             <label className="block text-sm font-medium text-white mb-1">
               Workout Details
@@ -168,14 +171,12 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-md border border-[#333333] bg-[#252525] p-2 text-white placeholder-[#666666] focus:ring-[#FFD700] focus:border-[#FFD700] focus:outline-none"
+              className="w-full rounded-md border border-[#333333] bg-[#252525] p-2 text-white focus:ring-[#FFD700] focus:border-[#FFD700] focus:outline-none"
               rows={6}
               placeholder="Enter your workout details here (optional)"
-              aria-label="Workout details"
             />
           </div>
 
-          {/* Form Actions */}
           <div className="flex justify-end gap-2 pt-4">
             <button
               type="button"

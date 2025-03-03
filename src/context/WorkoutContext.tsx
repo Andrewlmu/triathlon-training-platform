@@ -42,7 +42,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
       
       try {
         setIsLoading(true);
-        const response = await fetch('/api/workouts');
+        const response = await fetch('/api/workouts?include=label');
         
         if (!response.ok) {
           throw new Error('Failed to fetch workouts');
@@ -62,31 +62,29 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
   }, [session]);
 
   // Add a new workout
-  const addWorkout = async (workout: Workout): Promise<Workout> => {
+  const addWorkout = async (workoutData: Omit<Workout, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<Workout> => {
     if (!session?.user?.id) {
       throw new Error('You must be logged in to add a workout');
     }
     
     try {
-      const workoutWithUserId = {
-        ...workout,
-        userId: session.user.id
-      };
-      
       const response = await fetch('/api/workouts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(workoutWithUserId),
+        // Spread the workoutData object to make sure all properties (including labelId) are included
+        body: JSON.stringify({
+          ...workoutData
+        }),
       });
-
+  
       if (!response.ok) {
-        throw new Error('Failed to create workout');
+        throw new Error('Failed to add workout');
       }
-
+  
       const newWorkout = await response.json();
-      setWorkouts(prev => [...prev, newWorkout]);
+      setWorkouts(prev => [newWorkout, ...prev]);
       return newWorkout;
     } catch (error) {
       console.error('Error adding workout:', error);

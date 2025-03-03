@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 
-// GET all workouts (user specific)
+// GET all labels for the current user
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -15,23 +15,22 @@ export async function GET() {
       );
     }
     
-    const workouts = await prisma.workout.findMany({
+    const labels = await prisma.workoutLabel.findMany({
       where: { userId: session.user.id },
-      include: { label: true },
-      orderBy: { date: 'desc' },
+      orderBy: { name: 'asc' },
     });
     
-    return NextResponse.json(workouts);
+    return NextResponse.json(labels);
   } catch (error) {
-    console.error('Error fetching workouts:', error);
+    console.error('Error fetching labels:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch workouts' },
+      { error: 'Failed to fetch labels' },
       { status: 500 }
     );
   }
 }
 
-// POST a new workout
+// POST a new label
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -46,30 +45,27 @@ export async function POST(request: Request) {
     const data = await request.json();
     
     // Validate required fields
-    if (!data.type || !data.title || !data.date || data.duration === undefined) {
+    if (!data.name || !data.color) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
     
-    // Create workout with the user ID from the session
-    const workout = await prisma.workout.create({
+    // Create label
+    const label = await prisma.workoutLabel.create({
       data: {
-        type: data.type,
-        title: data.title,
-        description: data.description || "",
-        duration: data.duration,
-        date: new Date(data.date),
+        name: data.name,
+        color: data.color,
         userId: session.user.id
       },
     });
     
-    return NextResponse.json(workout, { status: 201 });
+    return NextResponse.json(label, { status: 201 });
   } catch (error) {
-    console.error('Error creating workout:', error);
+    console.error('Error creating label:', error);
     return NextResponse.json(
-      { error: 'Failed to create workout' },
+      { error: 'Failed to create label' },
       { status: 500 }
     );
   }
