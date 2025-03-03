@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../auth/[...nextauth]/route';
 
 // GET a single workout
 export async function GET(
@@ -7,6 +9,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
     const workout = await prisma.workout.findUnique({
       where: { id: params.id },
     });
@@ -15,6 +26,14 @@ export async function GET(
       return NextResponse.json(
         { error: 'Workout not found' },
         { status: 404 }
+      );
+    }
+    
+    // Check if the workout belongs to the current user
+    if (workout.userId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
       );
     }
     
@@ -33,6 +52,35 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
+    // Get the workout to check ownership
+    const existingWorkout = await prisma.workout.findUnique({
+      where: { id: params.id },
+    });
+    
+    if (!existingWorkout) {
+      return NextResponse.json(
+        { error: 'Workout not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Check if the workout belongs to the current user
+    if (existingWorkout.userId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized to modify this workout' },
+        { status: 403 }
+      );
+    }
+    
     const data = await request.json();
     
     // Handle date conversion if it exists
@@ -60,6 +108,35 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
+    // Get the workout to check ownership
+    const existingWorkout = await prisma.workout.findUnique({
+      where: { id: params.id },
+    });
+    
+    if (!existingWorkout) {
+      return NextResponse.json(
+        { error: 'Workout not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Check if the workout belongs to the current user
+    if (existingWorkout.userId !== session.user.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized to delete this workout' },
+        { status: 403 }
+      );
+    }
+    
     await prisma.workout.delete({
       where: { id: params.id },
     });

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Workout } from '@/types/workout';
+import { useSession } from 'next-auth/react';
 
 // Type for our context
 interface WorkoutContextType {
@@ -28,10 +29,17 @@ export const useWorkouts = () => useContext(WorkoutContext);
 export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { data: session } = useSession();
 
-  // Fetch workouts from API on mount
+  // Fetch workouts from API on mount or when session changes
   useEffect(() => {
     const fetchWorkouts = async () => {
+      if (!session) {
+        setWorkouts([]);
+        setIsLoading(false);
+        return;
+      }
+      
       try {
         setIsLoading(true);
         const response = await fetch('/api/workouts');
@@ -44,7 +52,6 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
         setWorkouts(data);
       } catch (error) {
         console.error('Error fetching workouts:', error);
-        // Fallback to empty array if API fails
         setWorkouts([]);
       } finally {
         setIsLoading(false);
@@ -52,18 +59,26 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
     };
 
     fetchWorkouts();
-  }, []);
+  }, [session]);
 
   // Add a new workout
   const addWorkout = async (workout: Workout): Promise<Workout> => {
+    if (!session?.user?.id) {
+      throw new Error('You must be logged in to add a workout');
+    }
+    
     try {
-      console.log("Sending workout to API:", workout);
+      const workoutWithUserId = {
+        ...workout,
+        userId: session.user.id
+      };
+      
       const response = await fetch('/api/workouts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(workout),
+        body: JSON.stringify(workoutWithUserId),
       });
 
       if (!response.ok) {
@@ -81,6 +96,10 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
 
   // Update an existing workout
   const updateWorkout = async (id: string, updatedWorkout: Workout): Promise<Workout> => {
+    if (!session?.user?.id) {
+      throw new Error('You must be logged in to update a workout');
+    }
+    
     try {
       const response = await fetch(`/api/workouts/${id}`, {
         method: 'PATCH',
@@ -107,6 +126,10 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
 
   // Delete a workout
   const deleteWorkout = async (id: string): Promise<boolean> => {
+    if (!session?.user?.id) {
+      throw new Error('You must be logged in to delete a workout');
+    }
+    
     try {
       const response = await fetch(`/api/workouts/${id}`, {
         method: 'DELETE',
