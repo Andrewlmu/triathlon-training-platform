@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, addMonths, isToday } from "date-fns";
 import { Bike, Waves, Footprints, Plus, Trash, Edit, Calendar } from "lucide-react";
 import WorkoutBuilder from "./workout/WorkoutBuilder";
@@ -20,17 +20,17 @@ const TrainingCalendar = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
-
+  
   // Get workout data and functions from context
-  const { workouts, addWorkout, updateWorkout, deleteWorkout } = useWorkouts();
+  const { workouts, isLoading, addWorkout, updateWorkout, deleteWorkout } = useWorkouts();
 
   // Initialize date state
-  React.useEffect(() => {
+  useEffect(() => {
     setCurrentMonth(new Date());
   }, []);
 
   // Show loading state while initializing
-  if (!currentMonth) {
+  if (!currentMonth || isLoading) {
     return (
       <div className="w-full max-w-4xl mx-auto bg-[#121212] rounded-lg shadow-xl p-4">
         <h2 className="text-lg font-bold text-white">Loading calendar...</h2>
@@ -50,18 +50,23 @@ const TrainingCalendar = () => {
    * @param date The date to save the workout on
    * @param workout The workout data to save
    */
-  const handleSaveWorkout = (date: Date, workout: Workout) => {
-    if (editingWorkout) {
-      updateWorkout(editingWorkout.id, {
+  const handleSaveWorkout = async (date: Date, workout: Workout) => {
+    try {
+      const workoutData = {
         ...workout,
         date: date.toISOString()
-      });
+      };
+      
+      if (editingWorkout) {
+        await updateWorkout(editingWorkout.id, workoutData);
+      } else {
+        await addWorkout(workoutData);
+      }
+      
       setEditingWorkout(null);
-    } else {
-      addWorkout({
-        ...workout,
-        date: date.toISOString()
-      });
+    } catch (error) {
+      console.error('Error saving workout:', error);
+      // You could show an error message to the user here
     }
   };
 
@@ -69,9 +74,14 @@ const TrainingCalendar = () => {
    * Handle deleting a workout after confirmation
    * @param workoutId The ID of the workout to delete
    */
-  const handleDeleteWorkout = (workoutId: string) => {
+  const handleDeleteWorkout = async (workoutId: string) => {
     if (window.confirm('Are you sure you want to delete this workout?')) {
-      deleteWorkout(workoutId);
+      try {
+        await deleteWorkout(workoutId);
+      } catch (error) {
+        console.error('Error deleting workout:', error);
+        // You could show an error message to the user here
+      }
     }
   };
 
@@ -139,23 +149,23 @@ const TrainingCalendar = () => {
       <div className="p-4 flex items-center justify-between border-b border-[#333333] bg-[#1E1E1E]">
         <h2 className="text-lg font-bold text-white">{format(currentMonth, "MMMM yyyy")}</h2>
         <div className="flex gap-2">
-          <button
-            onClick={goToToday}
+          <button 
+            onClick={goToToday} 
             className="flex items-center gap-1 px-3 py-1.5 bg-[#FFD700] text-[#121212] rounded-md hover:bg-[#F0C800] transition"
             aria-label="Go to today"
           >
             <Calendar className="h-4 w-4" />
             Today
           </button>
-          <button
-            onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}
+          <button 
+            onClick={() => setCurrentMonth(addMonths(currentMonth, -1))} 
             className="px-3 py-1.5 bg-[#252525] text-white rounded-md hover:bg-[#333333] transition"
             aria-label="Previous month"
           >
             Previous
           </button>
-          <button
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+          <button 
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} 
             className="px-3 py-1.5 bg-[#252525] text-white rounded-md hover:bg-[#333333] transition"
             aria-label="Next month"
           >
@@ -175,19 +185,21 @@ const TrainingCalendar = () => {
           const dayWorkouts = getWorkoutsForDay(day);
           const totalDuration = calculateDayTotalDuration(dayWorkouts);
           const isCurrentDay = isToday(day);
-
+          
           return (
             <div
               key={day.toISOString()}
-              className={`min-h-32 p-2 border border-[#333333] relative ${isSameMonth(day, currentMonth)
-                ? "bg-[#1E1E1E]"
-                : "bg-[#121212] text-[#666666]"
-                }`}
+              className={`min-h-32 p-2 border border-[#333333] relative ${
+                isSameMonth(day, currentMonth) 
+                  ? "bg-[#1E1E1E]" 
+                  : "bg-[#121212] text-[#666666]"
+              }`}
             >
               {/* Day Number and Total Duration */}
               <div className="flex justify-between items-start">
-                <span className={`text-sm font-medium text-white ${isCurrentDay ? "bg-[#FFD700] text-[#121212] w-6 h-6 rounded-full flex items-center justify-center" : ""
-                  }`}>
+                <span className={`text-sm font-medium text-white ${
+                  isCurrentDay ? "bg-[#FFD700] text-[#121212] w-6 h-6 rounded-full flex items-center justify-center" : ""
+                }`}>
                   {format(day, "d")}
                 </span>
                 {totalDuration > 0 && (
@@ -196,19 +208,20 @@ const TrainingCalendar = () => {
                   </span>
                 )}
               </div>
-
+              
               {/* Workouts for this day */}
               <div className="mt-1 space-y-1.5">
                 {dayWorkouts.map((workout) => (
-                  <div
+                  <div 
                     key={workout.id}
-                    className={`flex items-center justify-between text-xs p-1.5 rounded-sm ${workout.type === 'Bike' ? 'bg-[#1E90FF1A] border-l-2 border-[#1E90FF]' :
-                      workout.type === 'Run' ? 'bg-[#E639461A] border-l-2 border-[#E63946]' :
-                        'bg-[#00CED11A] border-l-2 border-[#00CED1]'
-                      } hover:bg-opacity-25 transition cursor-pointer group`}
+                    className={`flex items-center justify-between text-xs p-1.5 rounded-sm ${
+                      workout.type === 'Bike' ? 'bg-[#1E90FF1A] border-l-2 border-[#1E90FF]' : 
+                      workout.type === 'Run' ? 'bg-[#E639461A] border-l-2 border-[#E63946]' : 
+                      'bg-[#00CED11A] border-l-2 border-[#00CED1]'
+                    } hover:bg-opacity-25 transition cursor-pointer group`}
                   >
                     {/* Workout Info - Clickable to View Details */}
-                    <div
+                    <div 
                       className="flex items-center gap-1 flex-grow"
                       onClick={() => setSelectedWorkout(workout)}
                     >
@@ -216,7 +229,7 @@ const TrainingCalendar = () => {
                       <span className="font-medium text-white">{workout.title}</span>
                       <span className="ml-1 text-[#A0A0A0]">{formatDuration(workout.duration)}</span>
                     </div>
-
+                    
                     {/* Edit/Delete Actions */}
                     <div className="flex items-center opacity-0 group-hover:opacity-100 transition">
                       <button
@@ -244,7 +257,7 @@ const TrainingCalendar = () => {
                   </div>
                 ))}
               </div>
-
+              
               {/* Add Workout Button */}
               <button
                 onClick={() => {

@@ -40,17 +40,17 @@ interface WeeklyData {
 const WeeklySummary = () => {
   // State to track the current week being displayed
   const [currentWeekStart, setCurrentWeekStart] = useState<Date | null>(null);
-
+  
   // Create state to track calculations
   const [weeklyData, setWeeklyData] = useState<WeeklyData>({
     weeklyTotals: { swim: 0, bike: 0, run: 0, total: 0 },
     dailyBreakdown: [],
     maxValue: 1
   });
-
+  
   // Get workout data from context
-  const { workouts } = useWorkouts();
-
+  const { workouts, isLoading } = useWorkouts();
+  
   // Initialize week on client-side to prevent hydration errors
   useEffect(() => {
     setCurrentWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
@@ -59,16 +59,16 @@ const WeeklySummary = () => {
   // Recalculate weekly data whenever workouts or currentWeekStart changes
   useEffect(() => {
     if (!currentWeekStart) return;
-
+    
     const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
     const daysOfWeek = eachDayOfInterval({ start: currentWeekStart, end: weekEnd });
-
+    
     // Filter workouts for this week
     const weekWorkouts = workouts.filter(workout => {
       const workoutDate = new Date(workout.date);
       return workoutDate >= currentWeekStart && workoutDate <= weekEnd;
     });
-
+    
     // Initialize weekly totals
     const weeklyTotals = {
       swim: 0,
@@ -76,7 +76,7 @@ const WeeklySummary = () => {
       run: 0,
       total: 0
     };
-
+    
     // Initialize daily breakdown
     const dailyBreakdown = daysOfWeek.map(day => {
       // Filter workouts for this day
@@ -88,7 +88,7 @@ const WeeklySummary = () => {
           workoutDate.getDate() === day.getDate()
         );
       });
-
+      
       // Calculate totals for this day
       const dayTotals: DayTotals = {
         date: day,
@@ -97,11 +97,11 @@ const WeeklySummary = () => {
         run: 0,
         total: 0
       };
-
+      
       // Process each workout for this day
       dayWorkouts.forEach(workout => {
         const durationHours = workout.duration / 60;
-
+        
         if (workout.type === 'Swim') {
           dayTotals.swim += durationHours;
           weeklyTotals.swim += durationHours;
@@ -112,28 +112,28 @@ const WeeklySummary = () => {
           dayTotals.run += durationHours;
           weeklyTotals.run += durationHours;
         }
-
+        
         dayTotals.total += durationHours;
         weeklyTotals.total += durationHours;
       });
-
+      
       return dayTotals;
     });
-
+    
     // Calculate max value for bar scaling
     const maxValue = Math.max(weeklyTotals.swim, weeklyTotals.bike, weeklyTotals.run, 1);
-
+    
     // Update state with calculated data
     setWeeklyData({
       weeklyTotals,
       dailyBreakdown,
       maxValue
     });
-
+    
   }, [workouts, currentWeekStart]);
 
   // Show loading state while initializing
-  if (!currentWeekStart) {
+  if (!currentWeekStart || isLoading) {
     return <div className="bg-[#1E1E1E] rounded-lg shadow-xl border border-[#333333] p-4">
       <h2 className="text-lg font-bold text-white">Weekly Training</h2>
       <p className="text-[#A0A0A0] text-sm">Loading...</p>
@@ -166,7 +166,7 @@ const WeeklySummary = () => {
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-white">Weekly Training</h2>
         <div className="flex items-center gap-2">
-          <button
+          <button 
             onClick={prevWeek}
             className="p-1 text-[#A0A0A0] hover:text-white"
             aria-label="Previous week"
@@ -176,7 +176,7 @@ const WeeklySummary = () => {
           <span className="text-sm text-white">
             {format(currentWeekStart, 'MMM d')} - {format(weekEnd, 'MMM d, yyyy')}
           </span>
-          <button
+          <button 
             onClick={nextWeek}
             className="p-1 text-[#A0A0A0] hover:text-white"
             aria-label="Next week"
@@ -185,7 +185,7 @@ const WeeklySummary = () => {
           </button>
         </div>
       </div>
-
+      
       <div className="space-y-4">
         {/* Swim Summary with Progress Bar */}
         <div>
@@ -197,7 +197,7 @@ const WeeklySummary = () => {
             <span className="text-sm text-[#FFD700] font-medium">{formatHours(weeklyTotals.swim)}h</span>
           </div>
           <div className="w-full h-2 bg-[#252525] rounded-full overflow-hidden">
-            <div
+            <div 
               className="h-full bg-[#00CED1] rounded-full"
               style={{ width: `${(weeklyTotals.swim / maxValue) * 100}%` }}
             ></div>
@@ -214,7 +214,7 @@ const WeeklySummary = () => {
             <span className="text-sm text-[#FFD700] font-medium">{formatHours(weeklyTotals.bike)}h</span>
           </div>
           <div className="w-full h-2 bg-[#252525] rounded-full overflow-hidden">
-            <div
+            <div 
               className="h-full bg-[#1E90FF] rounded-full"
               style={{ width: `${(weeklyTotals.bike / maxValue) * 100}%` }}
             ></div>
@@ -231,7 +231,7 @@ const WeeklySummary = () => {
             <span className="text-sm text-[#FFD700] font-medium">{formatHours(weeklyTotals.run)}h</span>
           </div>
           <div className="w-full h-2 bg-[#252525] rounded-full overflow-hidden">
-            <div
+            <div 
               className="h-full bg-[#E63946] rounded-full"
               style={{ width: `${(weeklyTotals.run / maxValue) * 100}%` }}
             ></div>
@@ -256,7 +256,7 @@ const WeeklySummary = () => {
               <div className="text-[#E63946]">Run</div>
               <div className="text-white font-medium text-right">Total</div>
             </div>
-
+            
             {/* Daily data rows */}
             {dailyBreakdown.map((day, idx) => (
               <div key={idx} className="grid grid-cols-5 text-xs py-1">
@@ -269,7 +269,7 @@ const WeeklySummary = () => {
             ))}
           </div>
         </div>
-
+        
         {/* Training Metrics Section */}
         <div className="mt-4 pt-4 border-t border-[#333333]">
           <h3 className="text-sm font-semibold text-white mb-2">Training Metrics</h3>
@@ -279,15 +279,15 @@ const WeeklySummary = () => {
               <div className="text-[#A0A0A0] text-xs">Weekly Load</div>
               <div className="text-[#FFD700] font-bold">{(weeklyTotals.total * 100).toFixed(0)} TSS</div>
             </div>
-
+            
             {/* Sport Distribution Percentages */}
             <div className="bg-[#252525] p-2 rounded">
               <div className="text-[#A0A0A0] text-xs">Triathlon Balance</div>
               <div className="text-white font-medium text-xs">
                 {weeklyTotals.total > 0 ? (
                   <>
-                    <span className="text-[#00CED1]">{Math.round((weeklyTotals.swim / weeklyTotals.total) * 100)}%</span> /
-                    <span className="text-[#1E90FF]">{Math.round((weeklyTotals.bike / weeklyTotals.total) * 100)}%</span> /
+                    <span className="text-[#00CED1]">{Math.round((weeklyTotals.swim / weeklyTotals.total) * 100)}%</span> / 
+                    <span className="text-[#1E90FF]">{Math.round((weeklyTotals.bike / weeklyTotals.total) * 100)}%</span> / 
                     <span className="text-[#E63946]">{Math.round((weeklyTotals.run / weeklyTotals.total) * 100)}%</span>
                   </>
                 ) : '-'}
