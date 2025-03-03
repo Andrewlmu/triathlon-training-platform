@@ -22,6 +22,7 @@ interface WorkoutStore {
   updateWorkout: (date: Date, workoutId: string, updatedWorkout: Workout) => void;
   deleteWorkout: (date: Date, workoutId: string) => void;
   moveWorkout: (fromDate: Date, toDate: Date, workoutId: string) => void;
+  version: number; // Added version property to track changes
 }
 
 /**
@@ -34,7 +35,7 @@ export function useWorkoutStore(): WorkoutStore {
   const [workouts, setWorkouts] = useState<Record<string, Workout[]>>({});
   // Flag to track if initial data has been loaded from localStorage
   const [isInitialized, setIsInitialized] = useState(false);
-  // Add a version counter to force updates
+  // Version counter to force updates when workouts change
   const [version, setVersion] = useState(0);
 
   // Load workouts from localStorage on component mount (client-side only)
@@ -56,12 +57,7 @@ export function useWorkoutStore(): WorkoutStore {
   useEffect(() => {
     if (isInitialized && typeof window !== 'undefined') {
       localStorage.setItem('workouts', JSON.stringify(workouts));
-    }
-  }, [workouts, isInitialized]);
-
-  // Increment version with each change to workouts
-  useEffect(() => {
-    if (isInitialized) {
+      // Increment version to notify subscribers of a change
       setVersion(v => v + 1);
     }
   }, [workouts, isInitialized]);
@@ -94,7 +90,7 @@ export function useWorkoutStore(): WorkoutStore {
       const existingWorkouts = prev[dateKey] || [];
       return {
         ...prev,
-        [dateKey]: existingWorkouts.map(workout =>
+        [dateKey]: existingWorkouts.map(workout => 
           workout.id === workoutId ? updatedWorkout : workout
         )
       };
@@ -126,15 +122,15 @@ export function useWorkoutStore(): WorkoutStore {
   const moveWorkout = (fromDate: Date, toDate: Date, workoutId: string) => {
     const fromDateKey = getDateKey(fromDate);
     const toDateKey = getDateKey(toDate);
-
+    
     setWorkouts(prev => {
       const fromWorkouts = prev[fromDateKey] || [];
       const toWorkouts = prev[toDateKey] || [];
-
+      
       // Find the workout to move
       const workoutToMove = fromWorkouts.find(w => w.id === workoutId);
       if (!workoutToMove) return prev;
-
+      
       // Return updated state with workout moved to new date
       return {
         ...prev,

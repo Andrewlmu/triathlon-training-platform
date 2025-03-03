@@ -17,8 +17,3 @@ A modern web application for creating and managing triathlon training programs. 
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
 - [date-fns](https://date-fns.org/) - Modern JavaScript date utility library
 
-## Getting Started
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/andrewlmu/triathlon-training-platform.git
