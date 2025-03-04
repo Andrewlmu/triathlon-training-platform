@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, addMonths, isToday } from "date-fns";
-import { Bike, Waves, Footprints, Plus, Trash, Edit, Calendar } from "lucide-react";
+import { Bike, Waves, Footprints, Plus, Calendar } from "lucide-react";
 import WorkoutBuilder from "./workout/WorkoutBuilder";
 import WorkoutDisplay from "./workout/WorkoutDisplay";
 import { Workout } from "@/types/workout";
@@ -69,21 +69,6 @@ const TrainingCalendar = () => {
     } catch (error) {
       console.error('Error saving workout:', error);
       // You could show an error message to the user here
-    }
-  };
-
-  /**
-   * Handle deleting a workout after confirmation
-   * @param workoutId The ID of the workout to delete
-   */
-  const handleDeleteWorkout = async (workoutId: string) => {
-    if (window.confirm('Are you sure you want to delete this workout?')) {
-      try {
-        await deleteWorkout(workoutId);
-      } catch (error) {
-        console.error('Error deleting workout:', error);
-        // You could show an error message to the user here
-      }
     }
   };
 
@@ -191,14 +176,14 @@ const TrainingCalendar = () => {
           return (
             <div
               key={day.toISOString()}
-              className={`min-h-32 p-2 border border-[#333333] relative ${
+              className={`min-h-32 p-2 border border-[#333333] relative flex flex-col ${
                 isSameMonth(day, currentMonth) 
                   ? "bg-[#1E1E1E]" 
                   : "bg-[#121212] text-[#666666]"
               }`}
             >
               {/* Day Number and Total Duration */}
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-start mb-1">
                 <span className={`text-sm font-medium text-white ${
                   isCurrentDay ? "bg-[#FFD700] text-[#121212] w-6 h-6 rounded-full flex items-center justify-center" : ""
                 }`}>
@@ -211,8 +196,8 @@ const TrainingCalendar = () => {
                 )}
               </div>
               
-              {/* Workouts for this day */}
-              <div className="mt-1 space-y-1.5">
+              {/* Workouts for this day - make scrollable */}
+              <div className="mt-1 space-y-1.5 flex-grow overflow-y-auto max-h-28">
                 {dayWorkouts.map((workout) => {
                   // Find the label for this workout
                   const workoutLabel = workout.labelId 
@@ -222,7 +207,8 @@ const TrainingCalendar = () => {
                   return (
                     <div 
                       key={workout.id}
-                      className={`flex items-center justify-between text-xs p-1.5 rounded-sm 
+                      onClick={() => setSelectedWorkout(workout)}
+                      className={`flex items-center text-xs p-1.5 rounded-sm 
                         ${!workoutLabel 
                           ? `${
                               workout.type === 'Bike' ? 'bg-[#1E90FF1A] border-l-2 border-[#1E90FF]' : 
@@ -231,7 +217,7 @@ const TrainingCalendar = () => {
                             }`
                           : ''
                         } 
-                        hover:bg-opacity-25 transition cursor-pointer group`}
+                        hover:bg-opacity-25 transition cursor-pointer`}
                       style={workoutLabel ? {
                         backgroundColor: `${workoutLabel.color}1A`, // Add transparency
                         borderLeftWidth: '2px',
@@ -239,45 +225,10 @@ const TrainingCalendar = () => {
                         borderLeftColor: workoutLabel.color
                       } : {}}
                     >
-                      <div 
-                        className="flex items-center gap-1 flex-grow"
-                        onClick={() => setSelectedWorkout(workout)}
-                      >
+                      <div className="flex items-center gap-1 w-full overflow-hidden">
                         {getWorkoutIcon(workout.type)}
-                        <span className="font-medium text-white">{workout.title}</span>
-                        <span className="ml-1 text-[#A0A0A0]">{formatDuration(workout.duration)}</span>
-                        {workoutLabel && (
-                          <span 
-                            className="ml-1 px-1 rounded-sm text-[10px]" 
-                            style={{ backgroundColor: `${workoutLabel.color}33` }}
-                          >
-                            {workoutLabel.name}
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingWorkout(workout);
-                            setSelectedDate(day);
-                          }}
-                          className="p-1 text-[#A0A0A0] hover:text-white"
-                          aria-label="Edit workout"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteWorkout(workout.id);
-                          }}
-                          className="p-1 text-[#A0A0A0] hover:text-[#E63946]"
-                          aria-label="Delete workout"
-                        >
-                          <Trash className="h-3 w-3" />
-                        </button>
+                        <span className="font-medium text-white truncate">{workout.title}</span>
+                        <span className="ml-auto text-[#A0A0A0] whitespace-nowrap">{formatDuration(workout.duration)}</span>
                       </div>
                     </div>
                   );
@@ -318,6 +269,13 @@ const TrainingCalendar = () => {
         <WorkoutDisplay
           workout={selectedWorkout}
           onClose={() => setSelectedWorkout(null)}
+          onEdit={() => {
+            // Find the date object for this workout
+            const workoutDate = new Date(selectedWorkout.date);
+            setEditingWorkout(selectedWorkout);
+            setSelectedDate(workoutDate);
+            setSelectedWorkout(null);
+          }}
         />
       )}
     </div>
