@@ -71,12 +71,43 @@ export default function LabelManager() {
     '#9CA3AF', // Gray
     '#3B82F6', // Blue
     '#10B981', // Green
+    '#84CC16', // Yellow-green (sweet spot)
     '#FBBF24', // Yellow
     '#EF4444', // Red
-    '#B91C1C', // Dark red
+    '#DC2626', // Darker red (anaerobic)
+    '#991B1B', // Darkest red (sprints)
     '#8B5CF6', // Purple
     '#EC4899'  // Pink
   ];
+
+  // Order labels by training intensity
+  const orderedLabels = [...labels].sort((a, b) => {
+    const zoneOrder = [
+      'Recovery',
+      'Zone 2',
+      'Tempo',
+      'Sweet Spot',
+      'Threshold',
+      'VO2 Max',
+      'Anaerobic',
+      'Sprints',
+    ];
+    
+    const indexA = zoneOrder.indexOf(a.name);
+    const indexB = zoneOrder.indexOf(b.name);
+    
+    // If both labels are in our predefined order, sort by that order
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    
+    // If only one label is in our predefined order, prioritize it
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    
+    // Otherwise sort alphabetically
+    return a.name.localeCompare(b.name);
+  });
 
   return (
     <div>
@@ -117,10 +148,10 @@ export default function LabelManager() {
               <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
                 {isLoading ? (
                   <p className="text-[#A0A0A0]">Loading labels...</p>
-                ) : labels.length === 0 ? (
+                ) : orderedLabels.length === 0 ? (
                   <p className="text-[#A0A0A0]">No labels yet. Create your first label below.</p>
                 ) : (
-                  labels.map(label => (
+                  orderedLabels.map(label => (
                     <div key={label.id} className="flex items-center justify-between p-2 rounded bg-[#252525]">
                       {editMode?.id === label.id ? (
                         <>

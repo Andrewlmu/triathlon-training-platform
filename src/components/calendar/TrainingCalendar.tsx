@@ -21,7 +21,7 @@ const TrainingCalendar = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
-  
+
   // Get workout data and functions from context
   const { workouts, isLoading, addWorkout, updateWorkout, deleteWorkout } = useWorkouts();
   const { labels } = useLabels();
@@ -58,13 +58,13 @@ const TrainingCalendar = () => {
         ...workout,
         date: date.toISOString()
       };
-      
+
       if (editingWorkout) {
         await updateWorkout(editingWorkout.id, workoutData);
       } else {
         await addWorkout(workoutData);
       }
-      
+
       setEditingWorkout(null);
     } catch (error) {
       console.error('Error saving workout:', error);
@@ -136,23 +136,23 @@ const TrainingCalendar = () => {
       <div className="p-4 flex items-center justify-between border-b border-[#333333] bg-[#1E1E1E]">
         <h2 className="text-lg font-bold text-white">{format(currentMonth, "MMMM yyyy")}</h2>
         <div className="flex gap-2">
-          <button 
-            onClick={goToToday} 
+          <button
+            onClick={goToToday}
             className="flex items-center gap-1 px-3 py-1.5 bg-[#FFD700] text-[#121212] rounded-md hover:bg-[#F0C800] transition"
             aria-label="Go to today"
           >
             <Calendar className="h-4 w-4" />
             Today
           </button>
-          <button 
-            onClick={() => setCurrentMonth(addMonths(currentMonth, -1))} 
+          <button
+            onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}
             className="px-3 py-1.5 bg-[#252525] text-white rounded-md hover:bg-[#333333] transition"
             aria-label="Previous month"
           >
             Previous
           </button>
-          <button 
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} 
+          <button
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
             className="px-3 py-1.5 bg-[#252525] text-white rounded-md hover:bg-[#333333] transition"
             aria-label="Next month"
           >
@@ -172,21 +172,19 @@ const TrainingCalendar = () => {
           const dayWorkouts = getWorkoutsForDay(day);
           const totalDuration = calculateDayTotalDuration(dayWorkouts);
           const isCurrentDay = isToday(day);
-          
+
           return (
             <div
               key={day.toISOString()}
-              className={`min-h-32 p-2 border border-[#333333] relative flex flex-col ${
-                isSameMonth(day, currentMonth) 
-                  ? "bg-[#1E1E1E]" 
-                  : "bg-[#121212] text-[#666666]"
-              }`}
+              className={`min-h-32 p-2 border border-[#333333] relative flex flex-col ${isSameMonth(day, currentMonth)
+                ? "bg-[#1E1E1E]"
+                : "bg-[#121212] text-[#666666]"
+                }`}
             >
               {/* Day Number and Total Duration */}
               <div className="flex justify-between items-start mb-1">
-                <span className={`text-sm font-medium text-white ${
-                  isCurrentDay ? "bg-[#FFD700] text-[#121212] w-6 h-6 rounded-full flex items-center justify-center" : ""
-                }`}>
+                <span className={`text-sm font-medium text-white ${isCurrentDay ? "bg-[#FFD700] text-[#121212] w-6 h-6 rounded-full flex items-center justify-center" : ""
+                  }`}>
                   {format(day, "d")}
                 </span>
                 {totalDuration > 0 && (
@@ -195,33 +193,27 @@ const TrainingCalendar = () => {
                   </span>
                 )}
               </div>
-              
+
               {/* Workouts for this day - make scrollable */}
               <div className="mt-1 space-y-1.5 flex-grow overflow-y-auto max-h-28">
                 {dayWorkouts.map((workout) => {
                   // Find the label for this workout
-                  const workoutLabel = workout.labelId 
-                    ? labels.find(l => l.id === workout.labelId) 
+                  const workoutLabel = workout.labelId
+                    ? labels.find(l => l.id === workout.labelId)
                     : null;
-                  
+
                   return (
-                    <div 
+                    <div
                       key={workout.id}
                       onClick={() => setSelectedWorkout(workout)}
-                      className={`flex items-center text-xs p-1.5 rounded-sm 
-                        ${!workoutLabel 
-                          ? `${
-                              workout.type === 'Bike' ? 'bg-[#1E90FF1A] border-l-2 border-[#1E90FF]' : 
-                              workout.type === 'Run' ? 'bg-[#E639461A] border-l-2 border-[#E63946]' : 
-                              'bg-[#00CED11A] border-l-2 border-[#00CED1]'
-                            }`
+                      className={`flex items-center text-xs p-1.5 rounded-sm border-l-2
+                        ${!workoutLabel
+                          ? 'bg-white bg-opacity-5 border-white' // White styling for unlabeled workouts
                           : ''
                         } 
                         hover:bg-opacity-25 transition cursor-pointer`}
                       style={workoutLabel ? {
                         backgroundColor: `${workoutLabel.color}1A`, // Add transparency
-                        borderLeftWidth: '2px',
-                        borderLeftStyle: 'solid',
                         borderLeftColor: workoutLabel.color
                       } : {}}
                     >
@@ -234,7 +226,7 @@ const TrainingCalendar = () => {
                   );
                 })}
               </div>
-              
+
               {/* Add Workout Button */}
               <button
                 onClick={() => {

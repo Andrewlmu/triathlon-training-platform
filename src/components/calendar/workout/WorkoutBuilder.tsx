@@ -79,6 +79,35 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
     onClose();
   };
 
+  // Order labels by training intensity
+  const orderedLabels = [...labels].sort((a, b) => {
+    const zoneOrder = [
+      'Recovery',
+      'Zone 2',
+      'Tempo',
+      'Sweet Spot',
+      'Threshold',
+      'VO2 Max',
+      'Anaerobic',
+      'Sprints',
+    ];
+    
+    const indexA = zoneOrder.indexOf(a.name);
+    const indexB = zoneOrder.indexOf(b.name);
+    
+    // If both labels are in our predefined order, sort by that order
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    
+    // If only one label is in our predefined order, prioritize it
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    
+    // Otherwise sort alphabetically
+    return a.name.localeCompare(b.name);
+  });
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
       <div className="bg-[#1E1E1E] rounded-lg shadow-2xl w-full max-w-lg border border-[#333333]">
@@ -131,7 +160,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
                 className="w-full rounded-md border border-[#333333] bg-[#252525] p-2 text-white focus:ring-[#FFD700] focus:border-[#FFD700] focus:outline-none appearance-none"
               >
                 <option value="">No label</option>
-                {labels.map(label => (
+                {orderedLabels.map(label => (
                   <option key={label.id} value={label.id}>
                     {label.name}
                   </option>

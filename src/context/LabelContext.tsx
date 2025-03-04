@@ -161,12 +161,14 @@ export const LabelProvider = ({ children }: { children: ReactNode }) => {
       }
       
       const defaultLabels = [
-        { name: 'Recovery', color: '#9CA3AF' }, // Gray
-        { name: 'Zone 2', color: '#3B82F6' },   // Blue
-        { name: 'Tempo', color: '#10B981' },    // Green
-        { name: 'Threshold', color: '#FBBF24' }, // Yellow
-        { name: 'VO2 Max', color: '#EF4444' },  // Red
-        { name: 'Sprints', color: '#B91C1C' },  // Dark red
+        { name: 'Recovery', color: '#9CA3AF' },     // Gray
+        { name: 'Zone 2', color: '#3B82F6' },       // Blue
+        { name: 'Tempo', color: '#10B981' },        // Green
+        { name: 'Sweet Spot', color: '#84CC16' },   // Yellow-green
+        { name: 'Threshold', color: '#FBBF24' },    // Yellow
+        { name: 'VO2 Max', color: '#EF4444' },      // Red
+        { name: 'Anaerobic', color: '#DC2626' },    // Darker red
+        { name: 'Sprints', color: '#991B1B' },      // Darkest red
       ];
       
       const createdLabels = [];
@@ -201,14 +203,16 @@ export const LabelProvider = ({ children }: { children: ReactNode }) => {
         await deleteLabel(label.id);
       }
       
-      // Create default labels
+      // Create default labels with expanded set
       const defaultLabels = [
-        { name: 'Recovery', color: '#9CA3AF' }, // Gray
-        { name: 'Zone 2', color: '#3B82F6' },   // Blue
-        { name: 'Tempo', color: '#10B981' },    // Green
-        { name: 'Threshold', color: '#FBBF24' }, // Yellow
-        { name: 'VO2 Max', color: '#EF4444' },  // Red
-        { name: 'Sprints', color: '#B91C1C' },  // Dark red
+        { name: 'Recovery', color: '#9CA3AF' },     // Gray
+        { name: 'Zone 2', color: '#3B82F6' },       // Blue
+        { name: 'Tempo', color: '#10B981' },        // Green
+        { name: 'Sweet Spot', color: '#84CC16' },   // Yellow-green
+        { name: 'Threshold', color: '#FBBF24' },    // Yellow
+        { name: 'VO2 Max', color: '#EF4444' },      // Red
+        { name: 'Anaerobic', color: '#DC2626' },    // Darker red
+        { name: 'Sprints', color: '#991B1B' },      // Darkest red
       ];
       
       // Create each default label

@@ -4,7 +4,26 @@ import React, { useState, useEffect } from 'react';
 import { Bike, Waves, Footprints, ChevronLeft, ChevronRight } from 'lucide-react';
 import { startOfWeek, endOfWeek, addWeeks, subWeeks, format, eachDayOfInterval } from 'date-fns';
 import { useWorkouts } from '@/context/WorkoutContext';
+import { useLabels } from '@/context/LabelContext';
 import { Workout } from '@/types/workout';
+
+/**
+ * Interface for workout label data with duration
+ */
+interface LabelData {
+  id: string;
+  name: string;
+  color: string;
+  duration: number;
+}
+
+/**
+ * Interface for sport-specific data with label breakdown
+ */
+interface SportData {
+  total: number;
+  byLabel: Record<string, LabelData>;
+}
 
 /**
  * Interface for daily training totals
@@ -22,9 +41,9 @@ interface DayTotals {
  */
 interface WeeklyData {
   weeklyTotals: {
-    swim: number;
-    bike: number;
-    run: number;
+    swim: SportData;
+    bike: SportData;
+    run: SportData;
     total: number;
   };
   dailyBreakdown: DayTotals[];
@@ -43,13 +62,19 @@ const WeeklySummary = () => {
   
   // Create state to track calculations
   const [weeklyData, setWeeklyData] = useState<WeeklyData>({
-    weeklyTotals: { swim: 0, bike: 0, run: 0, total: 0 },
+    weeklyTotals: { 
+      swim: { total: 0, byLabel: {} }, 
+      bike: { total: 0, byLabel: {} }, 
+      run: { total: 0, byLabel: {} }, 
+      total: 0 
+    },
     dailyBreakdown: [],
     maxValue: 1
   });
   
   // Get workout data from context
   const { workouts, isLoading } = useWorkouts();
+  const { labels } = useLabels();
   
   // Initialize week on client-side to prevent hydration errors
   useEffect(() => {
@@ -69,15 +94,15 @@ const WeeklySummary = () => {
       return workoutDate >= currentWeekStart && workoutDate <= weekEnd;
     });
     
-    // Initialize weekly totals
+    // Initialize weekly totals with label tracking
     const weeklyTotals = {
-      swim: 0,
-      bike: 0,
-      run: 0,
+      swim: { total: 0, byLabel: {} as Record<string, LabelData> },
+      bike: { total: 0, byLabel: {} as Record<string, LabelData> },
+      run: { total: 0, byLabel: {} as Record<string, LabelData> },
       total: 0
     };
     
-    // Initialize daily breakdown
+    // Initialize daily breakdown (this remains unchanged)
     const dailyBreakdown = daysOfWeek.map(day => {
       // Filter workouts for this day
       const dayWorkouts = weekWorkouts.filter(workout => {
@@ -104,24 +129,53 @@ const WeeklySummary = () => {
         
         if (workout.type === 'Swim') {
           dayTotals.swim += durationHours;
-          weeklyTotals.swim += durationHours;
+          weeklyTotals.swim.total += durationHours;
         } else if (workout.type === 'Bike') {
           dayTotals.bike += durationHours;
-          weeklyTotals.bike += durationHours;
+          weeklyTotals.bike.total += durationHours;
         } else if (workout.type === 'Run') {
           dayTotals.run += durationHours;
-          weeklyTotals.run += durationHours;
+          weeklyTotals.run.total += durationHours;
         }
         
         dayTotals.total += durationHours;
         weeklyTotals.total += durationHours;
+        
+        // Track workout by label
+        const sportType = workout.type.toLowerCase() as 'swim' | 'bike' | 'run';
+        const labelKey = workout.labelId || 'no-label';
+        
+        // Find the label
+        let labelName = 'Unlabeled';
+        let labelColor = '#FFFFFF';
+        
+        if (workout.labelId) {
+          const workoutLabel = labels.find(l => l.id === workout.labelId);
+          if (workoutLabel) {
+            labelName = workoutLabel.name;
+            labelColor = workoutLabel.color;
+          }
+        }
+        
+        // Initialize or update the label data for this sport
+        if (!weeklyTotals[sportType].byLabel[labelKey]) {
+          weeklyTotals[sportType].byLabel[labelKey] = {
+            id: labelKey,
+            name: labelName,
+            color: labelColor,
+            duration: 0
+          };
+        }
+        
+        // Add this workout's duration to the label total
+        weeklyTotals[sportType].byLabel[labelKey].duration += durationHours;
       });
       
       return dayTotals;
     });
     
     // Calculate max value for bar scaling
-    const maxValue = Math.max(weeklyTotals.swim, weeklyTotals.bike, weeklyTotals.run, 1);
+    const maxValue = Math.max(weeklyTotals.swim.total, weeklyTotals.bike.total, weeklyTotals.run.total, 1);
     
     // Update state with calculated data
     setWeeklyData({
@@ -130,7 +184,7 @@ const WeeklySummary = () => {
       maxValue
     });
     
-  }, [workouts, currentWeekStart]);
+  }, [workouts, currentWeekStart, labels]);
 
   // Show loading state while initializing
   if (!currentWeekStart || isLoading) {
@@ -155,10 +209,147 @@ const WeeklySummary = () => {
   const formatHours = (hours: number): string => {
     return hours.toFixed(1);
   };
-
+  
+  /**
+   * Create a segmented progress bar based on label data
+   */
+  const SegmentedProgressBar = ({ 
+    sportData, 
+    maxValue, 
+    baseColor 
+  }: { 
+    sportData: SportData, 
+    maxValue: number,
+    baseColor: string
+  }) => {
+    // If there's no data, show empty bar
+    if (sportData.total === 0) {
+      return (
+        <div className="w-full h-2 bg-[#252525] rounded-full overflow-hidden"></div>
+      );
+    }
+    
+    // Calculate total width of the progress bar as percentage
+    const totalWidth = (sportData.total / maxValue) * 100;
+    
+    // Define the order of training zones
+    const zoneOrder = [
+      'Recovery',
+      'Zone 2',
+      'Tempo',
+      'Sweet Spot',
+      'Threshold',
+      'VO2 Max',
+      'Anaerobic',
+      'Sprints',
+      'Unlabeled',
+    ];
+    
+    // Get all labels for this sport and sort them by training zone
+    const sortedLabels = Object.values(sportData.byLabel)
+      .sort((a, b) => {
+        const indexA = zoneOrder.indexOf(a.name);
+        const indexB = zoneOrder.indexOf(b.name);
+        
+        // If both labels are in our defined order, sort by that
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+        
+        // If only one is in the order, prioritize it
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        
+        // Otherwise sort by duration (largest first)
+        return b.duration - a.duration;
+      });
+    
+    // Calculate segments
+    let segments: { color: string, width: number }[] = [];
+    
+    if (sortedLabels.length === 0) {
+      // If no labels (shouldn't happen), use base color
+      segments.push({ color: baseColor, width: totalWidth });
+    } else {
+      // Calculate each segment's width
+      segments = sortedLabels.map(label => ({
+        color: label.color,
+        width: (label.duration / sportData.total) * totalWidth
+      }));
+    }
+    
+    // Render the segments
+    return (
+      <div className="w-full h-2 bg-[#252525] rounded-full overflow-hidden flex">
+        {segments.map((segment, index) => (
+          <div 
+            key={index}
+            className="h-full"
+            style={{ 
+              backgroundColor: segment.color, 
+              width: `${segment.width}%`
+            }}
+          ></div>
+        ))}
+      </div>
+    );
+  };
+  
+  /**
+   * Get legend items ordered by training intensity
+   */
+  const getLegendItems = () => {
+    const allLabels: Record<string, { name: string, color: string }> = {};
+    
+    // Collect all unique labels from all sports
+    ['swim', 'bike', 'run'].forEach(sport => {
+      const sportData = weeklyTotals[sport as 'swim' | 'bike' | 'run'];
+      Object.values(sportData.byLabel).forEach(label => {
+        if (!allLabels[label.id]) {
+          allLabels[label.id] = { name: label.name, color: label.color };
+        }
+      });
+    });
+    
+    // Define the order of training zones by intensity
+    const zoneOrder = [
+      'Recovery',
+      'Zone 2',
+      'Tempo',
+      'Sweet Spot',
+      'Threshold',
+      'VO2 Max',
+      'Anaerobic',
+      'Sprints',
+      // Add any other label at the end
+      'Unlabeled'
+    ];
+    
+    // Sort labels by the predefined zone order
+    return Object.values(allLabels).sort((a, b) => {
+      const indexA = zoneOrder.indexOf(a.name);
+      const indexB = zoneOrder.indexOf(b.name);
+      
+      // If both labels are in our predefined order, sort by that order
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      
+      // If only one label is in our predefined order, prioritize it
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      
+      // Otherwise sort alphabetically
+      return a.name.localeCompare(b.name);
+    });
+  };
+  
   // Use the pre-calculated values from state
   const { weeklyTotals, dailyBreakdown, maxValue } = weeklyData;
   const weekEnd = currentWeekStart ? endOfWeek(currentWeekStart, { weekStartsOn: 1 }) : new Date();
+
+  // Get ordered legend items
+  const legendItems = getLegendItems();
 
   return (
     <div className="bg-[#1E1E1E] rounded-lg shadow-xl border border-[#333333] p-4">
@@ -194,14 +385,13 @@ const WeeklySummary = () => {
               <Waves className="h-4 w-4 text-[#00CED1]" />
               <span className="text-sm font-medium text-white">Swim</span>
             </div>
-            <span className="text-sm text-[#FFD700] font-medium">{formatHours(weeklyTotals.swim)}h</span>
+            <span className="text-sm text-[#FFD700] font-medium">{formatHours(weeklyTotals.swim.total)}h</span>
           </div>
-          <div className="w-full h-2 bg-[#252525] rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[#00CED1] rounded-full"
-              style={{ width: `${(weeklyTotals.swim / maxValue) * 100}%` }}
-            ></div>
-          </div>
+          <SegmentedProgressBar 
+            sportData={weeklyTotals.swim} 
+            maxValue={maxValue} 
+            baseColor="#00CED1" 
+          />
         </div>
 
         {/* Bike Summary with Progress Bar */}
@@ -211,14 +401,13 @@ const WeeklySummary = () => {
               <Bike className="h-4 w-4 text-[#1E90FF]" />
               <span className="text-sm font-medium text-white">Bike</span>
             </div>
-            <span className="text-sm text-[#FFD700] font-medium">{formatHours(weeklyTotals.bike)}h</span>
+            <span className="text-sm text-[#FFD700] font-medium">{formatHours(weeklyTotals.bike.total)}h</span>
           </div>
-          <div className="w-full h-2 bg-[#252525] rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[#1E90FF] rounded-full"
-              style={{ width: `${(weeklyTotals.bike / maxValue) * 100}%` }}
-            ></div>
-          </div>
+          <SegmentedProgressBar 
+            sportData={weeklyTotals.bike} 
+            maxValue={maxValue} 
+            baseColor="#1E90FF" 
+          />
         </div>
 
         {/* Run Summary with Progress Bar */}
@@ -228,15 +417,29 @@ const WeeklySummary = () => {
               <Footprints className="h-4 w-4 text-[#E63946]" />
               <span className="text-sm font-medium text-white">Run</span>
             </div>
-            <span className="text-sm text-[#FFD700] font-medium">{formatHours(weeklyTotals.run)}h</span>
+            <span className="text-sm text-[#FFD700] font-medium">{formatHours(weeklyTotals.run.total)}h</span>
           </div>
-          <div className="w-full h-2 bg-[#252525] rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[#E63946] rounded-full"
-              style={{ width: `${(weeklyTotals.run / maxValue) * 100}%` }}
-            ></div>
-          </div>
+          <SegmentedProgressBar 
+            sportData={weeklyTotals.run} 
+            maxValue={maxValue} 
+            baseColor="#E63946" 
+          />
         </div>
+
+        {/* Label Legend */}
+        {legendItems.length > 0 && (
+          <div className="mt-2 pt-1 flex flex-wrap gap-2">
+            {legendItems.map((item, index) => (
+              <div key={index} className="flex items-center gap-1 text-xs">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: item.color }}
+                ></div>
+                <span className="text-[#A0A0A0]">{item.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Total Weekly Hours */}
         <div className="pt-2 mt-2 border-t border-[#333333] flex justify-between items-center">
@@ -286,9 +489,9 @@ const WeeklySummary = () => {
               <div className="text-white font-medium text-xs">
                 {weeklyTotals.total > 0 ? (
                   <>
-                    <span className="text-[#00CED1]">{Math.round((weeklyTotals.swim / weeklyTotals.total) * 100)}%</span> / 
-                    <span className="text-[#1E90FF]">{Math.round((weeklyTotals.bike / weeklyTotals.total) * 100)}%</span> / 
-                    <span className="text-[#E63946]">{Math.round((weeklyTotals.run / weeklyTotals.total) * 100)}%</span>
+                    <span className="text-[#00CED1]">{Math.round((weeklyTotals.swim.total / weeklyTotals.total) * 100)}%</span> / 
+                    <span className="text-[#1E90FF]">{Math.round((weeklyTotals.bike.total / weeklyTotals.total) * 100)}%</span> / 
+                    <span className="text-[#E63946]">{Math.round((weeklyTotals.run.total / weeklyTotals.total) * 100)}%</span>
                   </>
                 ) : '-'}
               </div>
