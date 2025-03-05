@@ -32,6 +32,7 @@ export async function GET() {
 }
 
 // POST a new workout
+// POST a new workout
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -53,17 +54,43 @@ export async function POST(request: Request) {
       );
     }
     
-    // Create workout with the user ID from the session
-    const workout = await prisma.workout.create({
-      data: {
-        type: data.type,
-        title: data.title,
-        description: data.description || "",
-        duration: data.duration,
-        date: new Date(data.date),
-        userId: session.user.id
-      },
-    });
+    // Create the base workout data
+    const baseWorkoutData = {
+      type: data.type,
+      title: data.title,
+      description: data.description || "",
+      duration: data.duration,
+      date: new Date(data.date),
+      user: {
+        connect: {
+          id: session.user.id
+        }
+      }
+    };
+    
+    // Create the workout with or without label
+    let workout;
+    
+    if (data.labelId) {
+      // If there's a label, create with label connection
+      workout = await prisma.workout.create({
+        data: {
+          ...baseWorkoutData,
+          label: {
+            connect: {
+              id: data.labelId
+            }
+          }
+        },
+        include: { label: true }
+      });
+    } else {
+      // If no label, create without label connection
+      workout = await prisma.workout.create({
+        data: baseWorkoutData,
+        include: { label: true }
+      });
+    }
     
     return NextResponse.json(workout, { status: 201 });
   } catch (error) {
