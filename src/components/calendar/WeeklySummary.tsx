@@ -51,6 +51,15 @@ interface WeeklyData {
 }
 
 /**
+ * Interface for intensity zone
+ */
+interface IntensityZone {
+  name: string;
+  color: string;
+  duration: number;
+}
+
+/**
  * WeeklySummary Component
  * 
  * Displays a summary of training activities for the current week with navigation
@@ -303,7 +312,7 @@ const WeeklySummary = () => {
     
     // Collect all unique labels from all sports
     ['swim', 'bike', 'run'].forEach(sport => {
-      const sportData = weeklyTotals[sport as 'swim' | 'bike' | 'run'];
+      const sportData = weeklyData.weeklyTotals[sport as 'swim' | 'bike' | 'run'];
       Object.values(sportData.byLabel).forEach(label => {
         if (!allLabels[label.id]) {
           allLabels[label.id] = { name: label.name, color: label.color };
@@ -343,6 +352,84 @@ const WeeklySummary = () => {
       return a.name.localeCompare(b.name);
     });
   };
+
+  /**
+   * Calculate intensity distribution without grouping
+   */
+  const calculateIntensityDistribution = (): IntensityZone[] => {
+    // Define the order of training zones
+    const zoneOrder = [
+      'Recovery',
+      'Zone 2',
+      'Tempo',
+      'Sweet Spot',
+      'Threshold',
+      'VO2 Max',
+      'Anaerobic',
+      'Sprints',
+      'Unlabeled'
+    ];
+    
+    // Track total time in each intensity zone
+    const distribution: Record<string, IntensityZone> = {};
+    
+    // Initialize with zero for each zone that exists in our legend
+    zoneOrder.forEach(zone => {
+      distribution[zone] = {
+        name: zone,
+        color: zone === 'Unlabeled' ? '#FFFFFF' : '#000000', // Placeholder colors
+        duration: 0
+      };
+    });
+    
+    // Calculate total time in each sport by label
+    ['swim', 'bike', 'run'].forEach(sport => {
+      const sportData = weeklyData.weeklyTotals[sport as 'swim' | 'bike' | 'run'];
+      Object.values(sportData.byLabel).forEach(label => {
+        if (!distribution[label.name]) {
+          distribution[label.name] = {
+            name: label.name,
+            color: label.color,
+            duration: 0
+          };
+        } else if (distribution[label.name].color === '#000000') {
+          // Update color if we have a real label that matches one of our zones
+          distribution[label.name].color = label.color;
+        }
+        
+        distribution[label.name].duration += label.duration;
+      });
+    });
+    
+    // Filter out zones with zero duration and sort by our defined order
+    return Object.values(distribution)
+      .filter(zone => zone.duration > 0)
+      .sort((a, b) => {
+        const indexA = zoneOrder.indexOf(a.name);
+        const indexB = zoneOrder.indexOf(b.name);
+        
+        if (indexA !== -1 && indexB !== -1) {
+          return indexA - indexB;
+        }
+        
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        
+        return a.name.localeCompare(b.name);
+      });
+  };
+
+  /**
+   * Calculate training days
+   */
+  const calculateTrainingDays = () => {
+    // Count days with workouts
+    const daysWithWorkouts = weeklyData.dailyBreakdown.filter(day => day.total > 0).length;
+    return {
+      trainingDays: daysWithWorkouts,
+      restDays: 7 - daysWithWorkouts
+    };
+  };
   
   // Use the pre-calculated values from state
   const { weeklyTotals, dailyBreakdown, maxValue } = weeklyData;
@@ -350,6 +437,12 @@ const WeeklySummary = () => {
 
   // Get ordered legend items
   const legendItems = getLegendItems();
+  
+  // Get the training days data
+  const trainingDays = calculateTrainingDays();
+  
+  // Get intensity zones
+  const intensityZones = calculateIntensityDistribution();
 
   return (
     <div className="bg-[#1E1E1E] rounded-lg shadow-xl border border-[#333333] p-4">
@@ -477,13 +570,21 @@ const WeeklySummary = () => {
         <div className="mt-4 pt-4 border-t border-[#333333]">
           <h3 className="text-sm font-semibold text-white mb-2">Training Metrics</h3>
           <div className="grid grid-cols-2 gap-2">
-            {/* Simulated Training Stress Score */}
+            {/* Weekly Volume */}
             <div className="bg-[#252525] p-2 rounded">
-              <div className="text-[#A0A0A0] text-xs">Weekly Load</div>
-              <div className="text-[#FFD700] font-bold">{(weeklyTotals.total * 100).toFixed(0)} TSS</div>
+              <div className="text-[#A0A0A0] text-xs">Weekly Volume</div>
+              <div className="text-[#FFD700] font-bold">{formatHours(weeklyTotals.total)}h</div>
             </div>
             
-            {/* Sport Distribution Percentages */}
+            {/* Training Consistency */}
+            <div className="bg-[#252525] p-2 rounded">
+              <div className="text-[#A0A0A0] text-xs">Training Days</div>
+              <div className="text-white font-medium text-xs">
+                <span className="text-[#FFD700]">{trainingDays.trainingDays}</span> training / <span className="text-[#A0A0A0]">{trainingDays.restDays}</span> rest
+              </div>
+            </div>
+            
+            {/* Sport Distribution */}
             <div className="bg-[#252525] p-2 rounded">
               <div className="text-[#A0A0A0] text-xs">Triathlon Balance</div>
               <div className="text-white font-medium text-xs">
@@ -495,6 +596,43 @@ const WeeklySummary = () => {
                   </>
                 ) : '-'}
               </div>
+            </div>
+            
+            {/* Intensity Distribution - Now with detailed zones */}
+            <div className="bg-[#252525] p-2 rounded">
+              <div className="text-[#A0A0A0] text-xs">Intensity Breakdown</div>
+              {weeklyTotals.total > 0 && intensityZones.length > 0 ? (
+                <>
+                  {/* Segmented progress bar for intensity zones */}
+                  <div className="w-full bg-[#333333] h-2 rounded-full overflow-hidden flex mt-1">
+                    {intensityZones.map((zone, index) => (
+                      <div 
+                        key={index}
+                        className="h-full"
+                        style={{ 
+                          backgroundColor: zone.color, 
+                          width: `${(zone.duration / weeklyTotals.total) * 100}%` 
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+                  
+                  {/* Small percentage indicators */}
+                  <div className="flex flex-wrap gap-x-2 mt-1 text-[10px]">
+                    {intensityZones.map((zone, index) => (
+                      <div key={index} className="flex items-center gap-1">
+                        <div 
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: zone.color }}
+                        ></div>
+                        <span className="text-white opacity-70">
+                          {Math.round((zone.duration / weeklyTotals.total) * 100)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : '-'}
             </div>
           </div>
         </div>
