@@ -11,15 +11,19 @@ interface WorkoutContextType {
   addWorkout: (workout: Workout) => Promise<Workout>;
   updateWorkout: (id: string, updatedWorkout: Workout) => Promise<Workout>;
   deleteWorkout: (id: string) => Promise<boolean>;
+  reorderWorkouts: (workoutsToUpdate: { id: string; order: number; date?: string }[]) => Promise<boolean>;
+  moveWorkout: (id: string, newDate: Date, newOrder: number) => Promise<boolean>;
 }
 
 // Create context with default values
 const WorkoutContext = createContext<WorkoutContextType>({
   workouts: [],
   isLoading: true,
-  addWorkout: async () => ({ id: '', type: 'Bike', title: '', date: '', duration: 0 } as Workout),
-  updateWorkout: async () => ({ id: '', type: 'Bike', title: '', date: '', duration: 0 } as Workout),
-  deleteWorkout: async () => false
+  addWorkout: async () => ({ id: '', type: 'Bike', title: '', date: '', duration: 0, order: 0 } as Workout),
+  updateWorkout: async () => ({ id: '', type: 'Bike', title: '', date: '', duration: 0, order: 0 } as Workout),
+  deleteWorkout: async () => false,
+  reorderWorkouts: async () => false,
+  moveWorkout: async () => false
 });
 
 // Hook to use the context
@@ -147,9 +151,61 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Reorder multiple workouts at once
+  const reorderWorkouts = async (workoutsToUpdate: { id: string; order: number; date?: string }[]): Promise<boolean> => {
+    if (!session?.user?.id) {
+      throw new Error('You must be logged in to reorder workouts');
+    }
+    
+    try {
+      const response = await fetch('/api/workouts', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ workouts: workoutsToUpdate }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reorder workouts');
+      }
+
+      // After reordering, refetch all workouts to get the updated order
+      const freshResponse = await fetch('/api/workouts?include=label');
+      if (!freshResponse.ok) {
+        throw new Error('Failed to fetch updated workouts');
+      }
+      
+      const updatedWorkouts = await freshResponse.json();
+      setWorkouts(updatedWorkouts);
+      
+      return true;
+    } catch (error) {
+      console.error('Error reordering workouts:', error);
+      return false;
+    }
+  };
+
+  // Move a single workout (convenience method)
+  const moveWorkout = async (id: string, newDate: Date, newOrder: number): Promise<boolean> => {
+    return reorderWorkouts([{ 
+      id, 
+      order: newOrder,
+      date: newDate.toISOString()
+    }]);
+  };
+
   // Provide context to children
   return (
-    <WorkoutContext.Provider value={{ workouts, isLoading, addWorkout, updateWorkout, deleteWorkout }}>
+    <WorkoutContext.Provider value={{ 
+      workouts, 
+      isLoading, 
+      addWorkout, 
+      updateWorkout, 
+      deleteWorkout,
+      reorderWorkouts,
+      moveWorkout
+    }}>
       {children}
     </WorkoutContext.Provider>
   );

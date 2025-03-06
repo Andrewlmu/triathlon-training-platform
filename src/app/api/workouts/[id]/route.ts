@@ -6,8 +6,10 @@ import { authOptions } from '../../auth/[...nextauth]/route';
 // GET a single workout
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const id = context.params.id;
+  
   try {
     const session = await getServerSession(authOptions);
     
@@ -19,8 +21,8 @@ export async function GET(
     }
     
     const workout = await prisma.workout.findUnique({
-      where: { id: params.id },
-      include: { label: true } // Include the label relationship
+      where: { id },
+      include: { label: true }
     });
     
     if (!workout) {
@@ -40,6 +42,7 @@ export async function GET(
     
     return NextResponse.json(workout);
   } catch (error) {
+    console.error('Error fetching workout:', error);
     return NextResponse.json(
       { error: 'Failed to fetch workout' },
       { status: 500 }
@@ -50,8 +53,10 @@ export async function GET(
 // PATCH to update a workout
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const id = context.params.id;
+  
   try {
     const session = await getServerSession(authOptions);
     
@@ -64,7 +69,7 @@ export async function PATCH(
     
     // Get the workout to check ownership
     const existingWorkout = await prisma.workout.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
     
     if (!existingWorkout) {
@@ -89,15 +94,23 @@ export async function PATCH(
       data.date = new Date(data.date);
     }
     
-    // Update the workout with the label relationship
+    // If labelId is provided, use it directly
+    if (data.labelId) {
+      // Use direct assignment instead of nested connect
+      // This is more reliable across Prisma versions
+      data.labelId = data.labelId;
+    }
+    
+    // Update the workout
     const workout = await prisma.workout.update({
-      where: { id: params.id },
+      where: { id },
       data,
-      include: { label: true } // Include the label in the response
+      include: { label: true }
     });
     
     return NextResponse.json(workout);
   } catch (error) {
+    console.error('Error updating workout:', error);
     return NextResponse.json(
       { error: 'Failed to update workout' },
       { status: 500 }
@@ -108,9 +121,12 @@ export async function PATCH(
 // DELETE a workout
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Record<string, string> }
 ) {
   try {
+    // Use bracket notation instead of dot notation or destructuring
+    const workoutId = String(context.params["id"]);
+    
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
@@ -122,7 +138,7 @@ export async function DELETE(
     
     // Get the workout to check ownership
     const existingWorkout = await prisma.workout.findUnique({
-      where: { id: params.id },
+      where: { id: workoutId },
     });
     
     if (!existingWorkout) {
@@ -141,11 +157,12 @@ export async function DELETE(
     }
     
     await prisma.workout.delete({
-      where: { id: params.id },
+      where: { id: workoutId },
     });
     
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Error deleting workout:', error);
     return NextResponse.json(
       { error: 'Failed to delete workout' },
       { status: 500 }

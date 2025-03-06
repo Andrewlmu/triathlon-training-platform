@@ -91,7 +91,8 @@ model Workout {
   description String?
   duration    Int           // in minutes
   date        DateTime
-  labelId     String?       // Optional label
+  order       Int           @default(0)
+  labelId     String?       
   label       WorkoutLabel? @relation(fields: [labelId], references: [id])
   userId      String
   user        User          @relation(fields: [userId], references: [id])

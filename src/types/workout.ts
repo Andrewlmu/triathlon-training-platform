@@ -16,9 +16,19 @@ export interface Workout {
   description: string;
   duration: number;
   date: string;
+  order: number;
   labelId?: string;
   label?: WorkoutLabel;
   userId: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+// Interface for drag-and-drop operations
+export interface WorkoutMove {
+  id: string;
+  sourceDate: string;
+  sourceIndex: number;
+  destinationDate: string;
+  destinationIndex: number;
 }

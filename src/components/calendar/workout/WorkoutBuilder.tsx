@@ -73,6 +73,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
       date: date.toISOString(),
       labelId: labelId || undefined,
       userId: workout?.userId || '',
+      order: workout?.order || 0, // Use existing order or default to 0
     };
     
     onSave(updatedWorkout);
