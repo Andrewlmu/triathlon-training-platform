@@ -6,14 +6,14 @@ import { Bike, Waves, Footprints, Plus, Calendar } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
-  DragOverEvent,
-  DragOverlay,
   DragStartEvent,
   MouseSensor,
   TouchSensor,
-  closestCenter,
   useSensor,
-  useSensors
+  useSensors,
+  closestCenter,
+  useDroppable,
+  DragOverlay
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -28,6 +28,33 @@ import WorkoutDisplay from "./workout/WorkoutDisplay";
 import { Workout, WorkoutType } from "@/types/workout";
 import { useWorkouts } from "@/context/WorkoutContext";
 import { useLabels } from "@/context/LabelContext";
+
+/**
+ * Droppable Day Component to make each day a valid drop target
+ */
+const DroppableDay = ({
+  id,
+  children,
+  className,
+  isActive
+}: {
+  id: string;
+  children: React.ReactNode;
+  className?: string;
+  isActive?: boolean;
+}) => {
+  const { setNodeRef } = useDroppable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      id={id}
+      className={`${className} ${isActive ? 'bg-[#252525] bg-opacity-30' : ''}`}
+    >
+      {children}
+    </div>
+  );
+};
 
 /**
  * Sortable Workout Item Component
@@ -318,8 +345,8 @@ const TrainingCalendar = () => {
   };
 
   /**
- * Handle the end of a drag operation
- */
+   * Handle the end of a drag operation
+   */
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
@@ -333,131 +360,152 @@ const TrainingCalendar = () => {
     const workoutId = active.id as string;
     const targetId = over.id;
 
+    console.log('Drop event:', {
+      workoutId,
+      targetId,
+      activeId: active.id,
+      overId: over.id
+    });
+
     // Find the dragged workout
     const draggedWorkout = workouts.find(w => w.id === workoutId);
-    if (!draggedWorkout) return;
+    if (!draggedWorkout) {
+      console.error('Could not find dragged workout');
+      return;
+    }
 
-    // Get source date
+    // Determine if target is a day or a workout
+    const isTargetDay = typeof targetId === 'string' && targetId.startsWith('day-');
+    const isTargetWorkout = !isTargetDay;
+
+    // Get source information
     const sourceDate = new Date(draggedWorkout.date);
     const sourceDayId = getDayId(sourceDate);
     const sourceWorkouts = getWorkoutsForDay(sourceDate);
 
-    // Check if we're dropping over a day container
-    let destinationDayId = '';
-    let isDroppedOnDay = false;
+    // Get destination information
+    let destinationDayId: string;
 
-    if (typeof targetId === 'string' && targetId.startsWith('day-')) {
-      // Dropped directly on a day
+    if (isTargetDay) {
+      // If dropped directly on a day
       destinationDayId = targetId as string;
-      isDroppedOnDay = true;
+      console.log('Dropped on day:', destinationDayId);
     } else {
-      // Dropped on another workout, find which day it belongs to
+      // If dropped on a workout, find which day it belongs to
       const targetWorkout = workouts.find(w => w.id === targetId);
-      if (targetWorkout) {
-        const targetDate = new Date(targetWorkout.date);
-        destinationDayId = getDayId(targetDate);
-      } else {
-        // Fallback to source day if target not found
-        destinationDayId = sourceDayId;
+      if (!targetWorkout) {
+        console.error('Could not find target workout');
+        return;
       }
+      const targetDate = new Date(targetWorkout.date);
+      destinationDayId = getDayId(targetDate);
+      console.log('Dropped on workout in day:', destinationDayId);
     }
 
-    // Extract date from day ID (format: day-yyyy-MM-dd)
+    // Parse the destination date
     const destinationDateStr = destinationDayId.replace('day-', '');
-    const destinationDate = new Date(destinationDateStr);
+    const [yearStr, monthStr, dayStr] = destinationDateStr.split('-');
+    const year = parseInt(yearStr);
+    const month = parseInt(monthStr) - 1; // Month is 0-indexed in JS Date
+    const day = parseInt(dayStr);
+
+    if (isNaN(year) || isNaN(month) || isNaN(day)) {
+      console.error('Invalid date format:', destinationDateStr);
+      return;
+    }
+
+    const destinationDate = new Date(year, month, day);
     const destinationWorkouts = getWorkoutsForDay(destinationDate);
+
+    console.log('Source day:', sourceDayId, 'Destination day:', destinationDayId);
 
     // Prepare workouts to update
     let updatedWorkouts: { id: string; order: number; date?: string }[] = [];
 
-    // If moving within the same day
+    // Handle same day reordering
     if (sourceDayId === destinationDayId) {
-      const sourceIndex = sourceWorkouts.findIndex(w => w.id === workoutId);
-      let destinationIndex: number;
+      console.log('Same day reordering');
 
-      if (isDroppedOnDay) {
-        // If dropped on the day container, move to the end
-        destinationIndex = sourceWorkouts.length - 1;
-      } else {
-        // If dropped on another workout
+      // Only reorder if dropped on another workout
+      if (isTargetWorkout) {
+        const sourceIndex = sourceWorkouts.findIndex(w => w.id === workoutId);
         const targetIndex = sourceWorkouts.findIndex(w => w.id === targetId);
-        if (targetIndex === -1) {
-          // Target not found, move to end
-          destinationIndex = sourceWorkouts.length - 1;
-        } else {
-          destinationIndex = targetIndex;
+
+        if (sourceIndex === -1 || targetIndex === -1) {
+          console.error('Invalid source or target index');
+          return;
         }
+
+        console.log('Reordering from position', sourceIndex, 'to', targetIndex);
+
+        const reorderedWorkouts = arrayMove(sourceWorkouts, sourceIndex, targetIndex);
+        updatedWorkouts = reorderedWorkouts.map((workout, index) => ({
+          id: workout.id,
+          order: index
+        }));
       }
-
-      // Use arrayMove to handle the reordering
-      const reorderedWorkouts = [...sourceWorkouts];
-      // First remove the workout
-      reorderedWorkouts.splice(sourceIndex, 1);
-      // Then insert it at the new position
-      reorderedWorkouts.splice(destinationIndex, 0, draggedWorkout);
-
-      // Generate the updates
-      updatedWorkouts = reorderedWorkouts.map((workout, index) => ({
-        id: workout.id,
-        order: index
-      }));
     } else {
       // Moving to a different day
+      console.log('Moving to different day');
 
-      // First handle the source day
+      // Handle source day - remove workout
       const sourceIndex = sourceWorkouts.findIndex(w => w.id === workoutId);
+      if (sourceIndex === -1) {
+        console.error('Could not find workout in source day');
+        return;
+      }
+
       const updatedSourceWorkouts = [...sourceWorkouts];
       updatedSourceWorkouts.splice(sourceIndex, 1);
 
-      // Generate order updates for source workouts
       const sourceUpdates = updatedSourceWorkouts.map((workout, index) => ({
         id: workout.id,
         order: index
       }));
 
-      // Now handle the destination day
-      let destinationIndex: number;
+      // Handle destination day - add workout
+      const formattedDestinationDate = destinationDate.toISOString();
 
-      if (isDroppedOnDay) {
-        // If dropped on the day container, add to the end
-        destinationIndex = destinationWorkouts.length;
-      } else if (typeof targetId === 'string') {
-        // If dropped on another workout
+      // Determine insertion position
+      let insertIndex;
+
+      if (isTargetWorkout) {
+        // If dropped on a specific workout, insert at that position
         const targetIndex = destinationWorkouts.findIndex(w => w.id === targetId);
-        if (targetIndex === -1) {
-          // Target not found, add to end
-          destinationIndex = destinationWorkouts.length;
-        } else {
-          destinationIndex = targetIndex;
-        }
+        insertIndex = targetIndex !== -1 ? targetIndex : destinationWorkouts.length;
+        console.log('Inserting at position', insertIndex, 'in destination day');
       } else {
-        // Fallback to end
-        destinationIndex = destinationWorkouts.length;
+        // If dropped on the day container, add to the end
+        insertIndex = destinationWorkouts.length;
+        console.log('Adding to end of destination day, position', insertIndex);
       }
 
-      // Insert at the destination position
       const updatedDestWorkouts = [...destinationWorkouts];
-      updatedDestWorkouts.splice(destinationIndex, 0, {
+      updatedDestWorkouts.splice(insertIndex, 0, {
         ...draggedWorkout,
-        date: destinationDateStr
+        date: formattedDestinationDate
       });
 
-      // Generate order updates for destination workouts
       const destUpdates = updatedDestWorkouts.map((workout, index) => ({
         id: workout.id,
         order: index,
-        date: workout.id === workoutId ? destinationDateStr : undefined
+        date: workout.id === workoutId ? formattedDestinationDate : undefined
       }));
 
       // Combine all updates
       updatedWorkouts = [...sourceUpdates, ...destUpdates];
     }
 
-    // Save the changes
-    try {
-      await reorderWorkouts(updatedWorkouts);
-    } catch (error) {
-      console.error('Error reordering workouts:', error);
+    // Save changes
+    if (updatedWorkouts.length > 0) {
+      try {
+        console.log('Saving updates:', updatedWorkouts);
+        await reorderWorkouts(updatedWorkouts);
+      } catch (error) {
+        console.error('Error reordering workouts:', error);
+      }
+    } else {
+      console.log('No updates to save');
     }
   };
 
@@ -541,7 +589,6 @@ const TrainingCalendar = () => {
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
-        onDragOver={handleDragEnd}
         onDragEnd={handleDragEnd}
       >
         {/* Weekday Headers */}
@@ -556,17 +603,18 @@ const TrainingCalendar = () => {
             const totalDuration = calculateDayTotalDuration(dayWorkouts);
             const isCurrentDay = isToday(day);
             const dayId = getDayId(day);
+            const isActive = activeDayId === dayId;
 
             return (
-              <div
+              <DroppableDay
                 key={day.toISOString()}
-                id={dayId} // Important: This ID must match what we check in handleDragOver
+                id={dayId}
+                isActive={isActive}
                 className={`min-h-32 p-2 border border-[#333333] relative 
                   ${isSameMonth(day, currentMonth)
                     ? "bg-[#1E1E1E]"
                     : "bg-[#121212] text-[#666666]"
                   }
-                  ${activeDayId === dayId ? "bg-[#252525] bg-opacity-30" : ""}
                 `}
               >
                 <DayContainer
@@ -581,7 +629,7 @@ const TrainingCalendar = () => {
                   totalDuration={totalDuration}
                   labels={labels}
                 />
-              </div>
+              </DroppableDay>
             );
           })}
         </div>
