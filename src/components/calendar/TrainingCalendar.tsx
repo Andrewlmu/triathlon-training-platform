@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, addMonths, isToday, isSameDay } from "date-fns";
-import { Bike, Waves, Footprints, Plus, Calendar } from "lucide-react";
+import { Bike, Waves, Footprints, Plus, Calendar, Copy } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -25,6 +25,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 import WorkoutBuilder from "./workout/WorkoutBuilder";
 import WorkoutDisplay from "./workout/WorkoutDisplay";
+import CopyWeekModal from "./CopyWeekModal";
 import { Workout, WorkoutType } from "@/types/workout";
 import { useWorkouts } from "@/context/WorkoutContext";
 import { useLabels } from "@/context/LabelContext";
@@ -201,6 +202,7 @@ const TrainingCalendar = () => {
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
   const [activeWorkout, setActiveWorkout] = useState<Workout | null>(null);
   const [activeDayId, setActiveDayId] = useState<string | null>(null);
+  const [showCopyWeekModal, setShowCopyWeekModal] = useState(false);
 
   // Get workout data and functions from context
   const { workouts, isLoading, addWorkout, updateWorkout, deleteWorkout, reorderWorkouts } = useWorkouts();
@@ -263,22 +265,18 @@ const TrainingCalendar = () => {
       setEditingWorkout(null);
     } catch (error) {
       console.error('Error saving workout:', error);
-      // You could show an error message to the user here
     }
   };
 
   /**
-   * Handle deleting a workout after confirmation
+   * Handle deleting a workout (removed confirmation)
    * @param workoutId The ID of the workout to delete
    */
   const handleDeleteWorkout = async (workoutId: string) => {
-    if (window.confirm('Are you sure you want to delete this workout?')) {
-      try {
-        await deleteWorkout(workoutId);
-      } catch (error) {
-        console.error('Error deleting workout:', error);
-        // You could show an error message to the user here
-      }
+    try {
+      await deleteWorkout(workoutId);
+    } catch (error) {
+      console.error('Error deleting workout:', error);
     }
   };
 
@@ -560,6 +558,14 @@ const TrainingCalendar = () => {
         <h2 className="text-lg font-bold text-white">{format(currentMonth, "MMMM yyyy")}</h2>
         <div className="flex gap-2">
           <button
+            onClick={() => setShowCopyWeekModal(true)}
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#252525] text-white rounded-md hover:bg-[#333333] transition"
+            aria-label="Copy week"
+          >
+            <Copy className="h-4 w-4" />
+            Copy Week
+          </button>
+          <button
             onClick={goToToday}
             className="flex items-center gap-1 px-3 py-1.5 bg-[#FFD700] text-[#121212] rounded-md hover:bg-[#F0C800] transition"
             aria-label="Go to today"
@@ -663,6 +669,13 @@ const TrainingCalendar = () => {
             setSelectedDate(workoutDate);
             setSelectedWorkout(null);
           }}
+        />
+      )}
+      
+      {/* Copy Week Modal */}
+      {showCopyWeekModal && (
+        <CopyWeekModal
+          onClose={() => setShowCopyWeekModal(false)}
         />
       )}
     </div>

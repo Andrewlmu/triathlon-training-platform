@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Workout } from '@/types/workout';
 import { useSession } from 'next-auth/react';
+import { startOfWeek, endOfWeek, eachDayOfInterval, addDays, differenceInDays } from 'date-fns';
 
 // Type for our context
 interface WorkoutContextType {
@@ -13,17 +14,19 @@ interface WorkoutContextType {
   deleteWorkout: (id: string) => Promise<boolean>;
   reorderWorkouts: (workoutsToUpdate: { id: string; order: number; date?: string }[]) => Promise<boolean>;
   moveWorkout: (id: string, newDate: Date, newOrder: number) => Promise<boolean>;
+  copyWorkoutsToWeek: (sourceWeekStart: Date, targetWeekStart: Date) => Promise<boolean>;
 }
 
 // Create context with default values
 const WorkoutContext = createContext<WorkoutContextType>({
   workouts: [],
   isLoading: true,
-  addWorkout: async () => ({ id: '', type: 'Bike', title: '', date: '', duration: 0, order: 0 } as Workout),
-  updateWorkout: async () => ({ id: '', type: 'Bike', title: '', date: '', duration: 0, order: 0 } as Workout),
+  addWorkout: async () => ({ id: '', type: 'Bike', title: '', date: '', duration: 0, order: 0, description: '', userId: '' } as Workout),
+  updateWorkout: async () => ({ id: '', type: 'Bike', title: '', date: '', duration: 0, order: 0, description: '', userId: '' } as Workout),
   deleteWorkout: async () => false,
   reorderWorkouts: async () => false,
-  moveWorkout: async () => false
+  moveWorkout: async () => false,
+  copyWorkoutsToWeek: async () => false
 });
 
 // Hook to use the context
@@ -195,6 +198,73 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
     }]);
   };
 
+  // Copy workouts from one week to another
+  const copyWorkoutsToWeek = async (sourceWeekStart: Date, targetWeekStart: Date): Promise<boolean> => {
+    if (!session?.user?.id) {
+      throw new Error('You must be logged in to copy workouts');
+    }
+    
+    try {
+      // Get all days in the source week
+      const sourceWeekEnd = endOfWeek(sourceWeekStart, { weekStartsOn: 1 });
+      const daysInSourceWeek = eachDayOfInterval({ start: sourceWeekStart, end: sourceWeekEnd });
+      
+      // Find workouts for each day in the source week
+      const workoutsToCopy: Workout[] = [];
+      
+      for (const day of daysInSourceWeek) {
+        const dayWorkouts = workouts.filter(workout => {
+          const workoutDate = new Date(workout.date);
+          return (
+            workoutDate.getFullYear() === day.getFullYear() &&
+            workoutDate.getMonth() === day.getMonth() &&
+            workoutDate.getDate() === day.getDate()
+          );
+        });
+        
+        workoutsToCopy.push(...dayWorkouts);
+      }
+      
+      if (workoutsToCopy.length === 0) {
+        return false; // No workouts to copy
+      }
+      
+      // Calculate the offset between source and target weeks
+      const daysDifference = differenceInDays(targetWeekStart, sourceWeekStart);
+      
+      // Make API call to copy workouts
+      const response = await fetch('/api/workouts/copy-week', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sourceWeekStart: sourceWeekStart.toISOString(),
+          targetWeekStart: targetWeekStart.toISOString(),
+          daysDifference
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to copy workouts');
+      }
+
+      // Refetch workouts to get the updated list
+      const freshResponse = await fetch('/api/workouts?include=label');
+      if (!freshResponse.ok) {
+        throw new Error('Failed to fetch updated workouts');
+      }
+      
+      const updatedWorkouts = await freshResponse.json();
+      setWorkouts(updatedWorkouts);
+      
+      return true;
+    } catch (error) {
+      console.error('Error copying workouts:', error);
+      return false;
+    }
+  };
+
   // Provide context to children
   return (
     <WorkoutContext.Provider value={{ 
@@ -204,7 +274,8 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
       updateWorkout, 
       deleteWorkout,
       reorderWorkouts,
-      moveWorkout
+      moveWorkout,
+      copyWorkoutsToWeek
     }}>
       {children}
     </WorkoutContext.Provider>

@@ -1,5 +1,3 @@
-// Update the WorkoutDisplay.tsx component to include edit and delete buttons
-
 "use client";
 
 import React from 'react';
@@ -29,13 +27,12 @@ const WorkoutDisplay: React.FC<WorkoutDisplayProps> = ({
     : null;
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this workout?')) {
-      try {
-        await deleteWorkout(workout.id);
-        onClose();
-      } catch (error) {
-        console.error('Error deleting workout:', error);
-      }
+    // Removed confirmation dialog
+    try {
+      await deleteWorkout(workout.id);
+      onClose();
+    } catch (error) {
+      console.error('Error deleting workout:', error);
     }
   };
 
