@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Custom scrollbar styling for workout lists in calendar */
+.max-h-28::-webkit-scrollbar {
+  width: 4px;
+}
+
+.max-h-28::-webkit-scrollbar-track {
+  background: #1E1E1E;
+}
+
+.max-h-28::-webkit-scrollbar-thumb {
+  background-color: #333333;
+  border-radius: 4px;
+}
+
+/* Add hover effect on the scrollbar for better UX */
+.max-h-28::-webkit-scrollbar-thumb:hover {
+  background-color: #444444;
+}
