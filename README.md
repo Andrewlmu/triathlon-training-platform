@@ -46,6 +46,9 @@ Demo credentials:
 ### Workout Builder
 ![Workout Builder](./screenshots/workout-builder.png)
 
+### Workout Details
+![Workout Builder](./screenshots/workout-details.png)
+
 ### Label Management
 ![Label Management](./screenshots/label-management.png)
 
