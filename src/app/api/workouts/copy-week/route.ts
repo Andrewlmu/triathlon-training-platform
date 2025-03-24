@@ -4,8 +4,27 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { addDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
 
+/**
+ * POST Handler - Copy workouts from one week to another
+ * 
+ * Creates copies of all workouts from a source week to a target week.
+ * Maintains the same day-of-week structure (Monday workouts to Monday, etc.).
+ * Preserves workout attributes including labels and ordering.
+ * Authentication is required.
+ * 
+ * Expected request body:
+ * {
+ *   sourceWeekStart: "2025-03-10T00:00:00.000Z", // Start date of source week (Monday)
+ *   targetWeekStart: "2025-03-17T00:00:00.000Z", // Start date of target week (Monday)
+ *   daysDifference: 7 // Optional - Number of days between source and target
+ * }
+ * 
+ * @route POST /api/workouts/copy-week
+ * @returns {Promise<NextResponse>} JSON response with created workouts or error
+ */
 export async function POST(request: Request) {
   try {
+    // Verify authentication
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
@@ -46,6 +65,7 @@ export async function POST(request: Request) {
       },
     });
     
+    // Check if source week has any workouts
     if (sourceWeekWorkouts.length === 0) {
       return NextResponse.json(
         { error: 'No workouts found in the source week' },
@@ -54,6 +74,7 @@ export async function POST(request: Request) {
     }
     
     // Group workouts by day of the week (0-6, where 0 is Monday in our case)
+    // This ensures workouts are copied to the same day of week in the target week
     const workoutsByDay: Record<number, any[]> = {};
     
     sourceWeekWorkouts.forEach(workout => {
@@ -84,6 +105,7 @@ export async function POST(request: Request) {
       for (let i = 0; i < sortedWorkouts.length; i++) {
         const sourceWorkout = sortedWorkouts[i];
         
+        // Create new workout with data from source workout
         const newWorkout = await prisma.workout.create({
           data: {
             type: sourceWorkout.type,

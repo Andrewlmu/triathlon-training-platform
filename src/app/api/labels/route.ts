@@ -3,9 +3,19 @@ import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-// GET all labels for the current user
+/**
+ * GET Handler - Fetch all labels for the current user
+ * 
+ * Retrieves all workout labels created by the authenticated user.
+ * Labels are sorted alphabetically by name.
+ * Authentication is required.
+ * 
+ * @route GET /api/labels
+ * @returns {Promise<NextResponse>} JSON response with labels array or error
+ */
 export async function GET() {
   try {
+    // Verify authentication
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
@@ -15,6 +25,7 @@ export async function GET() {
       );
     }
     
+    // Fetch all labels for the authenticated user
     const labels = await prisma.workoutLabel.findMany({
       where: { userId: session.user.id },
       orderBy: { name: 'asc' },
@@ -30,9 +41,25 @@ export async function GET() {
   }
 }
 
-// POST a new label
+/**
+ * POST Handler - Create a new workout label
+ * 
+ * Creates a new workout label for the authenticated user.
+ * Requires a name and color for the label.
+ * Authentication is required.
+ * 
+ * Expected request body:
+ * {
+ *   name: "Zone 2",  // Label name
+ *   color: "#3B82F6" // Hex color code
+ * }
+ * 
+ * @route POST /api/labels
+ * @returns {Promise<NextResponse>} JSON response with created label or error
+ */
 export async function POST(request: Request) {
   try {
+    // Verify authentication
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
@@ -52,7 +79,7 @@ export async function POST(request: Request) {
       );
     }
     
-    // Create label
+    // Create new workout label
     const label = await prisma.workoutLabel.create({
       data: {
         name: data.name,

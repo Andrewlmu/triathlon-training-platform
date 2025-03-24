@@ -3,6 +3,23 @@ import bcrypt from "bcrypt";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
+/**
+ * POST Handler - Register a new user
+ * 
+ * Creates a new user account with the provided email, password, and optional name.
+ * Handles password hashing, database transactions, and error handling.
+ * Prevents duplicate email registrations.
+ * 
+ * Expected request body:
+ * {
+ *   email: "user@example.com",  // Required user email
+ *   password: "securepass123",  // Required password
+ *   name: "John Doe"            // Optional user name
+ * }
+ * 
+ * @route POST /api/auth/signup
+ * @returns {Promise<NextResponse>} JSON response with user data or error
+ */
 export async function POST(req: Request) {
   try {
     console.log("Starting signup process");
@@ -32,15 +49,17 @@ export async function POST(req: Request) {
     }
     
     console.log("Hashing password");
-    // Hash password
+    // Hash password with bcrypt for secure storage
+    // Salt factor of 10 provides a good balance of security and performance
     const hashedPassword = await bcrypt.hash(password, 10);
     
     console.log("Starting database transaction");
     try {
-      // Create user and credentials in a transaction
+      // Use transaction to ensure both user and credentials are created together
+      // This maintains data integrity - either both succeed or both fail
       const result = await prisma.$transaction(async (tx) => {
         console.log("Creating user");
-        // Create the user
+        // Create the user record first
         const user = await tx.user.create({
           data: {
             name,
@@ -49,7 +68,8 @@ export async function POST(req: Request) {
         });
         
         console.log("User created, now creating credentials");
-        // Create user credentials
+        // Create user credentials with password
+        // Linked to user by userId foreign key
         const credentials = await tx.userCredential.create({
           data: {
             userId: user.id,
@@ -61,6 +81,7 @@ export async function POST(req: Request) {
       });
       
       console.log("Transaction completed successfully");
+      // Return user data without sensitive fields
       return NextResponse.json({ 
         user: { 
           id: result.user.id, 
@@ -69,7 +90,7 @@ export async function POST(req: Request) {
         } 
       }, { status: 201 });
     } catch (error) {
-      // Type guard for Prisma errors
+      // Type guard for Prisma errors to provide better error logging
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         console.error("Transaction Prisma error:", {
           message: error.message,
@@ -82,7 +103,7 @@ export async function POST(req: Request) {
       throw error; // Re-throw to be caught by outer try/catch
     }
   } catch (error: unknown) {
-    // Handle any error type safely
+    // Handle any error type safely with detailed logging
     let errorMessage = "An error occurred while creating your account";
     
     // Type guard for Error objects
@@ -96,7 +117,7 @@ export async function POST(req: Request) {
       console.error("Unknown error type:", error);
     }
     
-    // Type guard for Prisma errors
+    // Type guard for Prisma errors to provide better debugging info
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       console.error("Prisma error details:", {
         code: error.code,

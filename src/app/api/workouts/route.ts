@@ -3,9 +3,19 @@ import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-// GET all workouts (user specific)
+/**
+ * GET Handler - Fetch all workouts for the authenticated user
+ * 
+ * Returns all workouts belonging to the current user with their associated labels.
+ * Workouts are sorted by date (descending) and order field (ascending).
+ * Authentication is required.
+ * 
+ * @route GET /api/workouts
+ * @returns {Promise<NextResponse>} JSON response with workouts array or error
+ */
 export async function GET() {
   try {
+    // Verify authentication
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
@@ -15,9 +25,10 @@ export async function GET() {
       );
     }
     
+    // Fetch workouts for the authenticated user
     const workouts = await prisma.workout.findMany({
       where: { userId: session.user.id },
-      include: { label: true },
+      include: { label: true }, // Include associated label data
       orderBy: [
         { date: 'desc' },
         { order: 'asc' } // Order by date, then by order field
@@ -34,9 +45,29 @@ export async function GET() {
   }
 }
 
-// POST a new workout
+/**
+ * POST Handler - Create a new workout
+ * 
+ * Creates a new workout for the authenticated user.
+ * Automatically calculates the order field based on existing workouts for the same date.
+ * Authentication is required.
+ * 
+ * Required fields:
+ * - type: Workout type (Swim, Bike, Run)
+ * - title: Workout title
+ * - date: ISO date string
+ * - duration: Duration in minutes
+ * 
+ * Optional fields:
+ * - description: Detailed workout instructions
+ * - labelId: Reference to a workout label
+ * 
+ * @route POST /api/workouts
+ * @returns {Promise<NextResponse>} JSON response with created workout or error
+ */
 export async function POST(request: Request) {
   try {
+    // Verify authentication
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
@@ -57,6 +88,7 @@ export async function POST(request: Request) {
     }
     
     // Calculate the highest order number for workouts on this date
+    // This ensures new workouts are added at the end of the day's list
     const date = new Date(data.date);
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
@@ -105,10 +137,10 @@ export async function POST(request: Request) {
       workoutData.labelId = data.labelId;
     }
     
-    // Create workout
+    // Create workout in database
     const workout = await prisma.workout.create({
       data: workoutData,
-      include: { label: true }
+      include: { label: true } // Include the label in the response
     });
     
     return NextResponse.json(workout, { status: 201 });
@@ -121,9 +153,27 @@ export async function POST(request: Request) {
   }
 }
 
-// PATCH to reorder workouts
+/**
+ * PATCH Handler - Reorder workouts
+ * 
+ * Updates the order and optionally the date of multiple workouts in a single operation.
+ * Used for drag-and-drop reordering operations in the calendar.
+ * Authentication is required.
+ * 
+ * Expected request body:
+ * {
+ *   workouts: [
+ *     { id: "workout-id", order: 0, date?: "2025-03-15T00:00:00.000Z" },
+ *     ...
+ *   ]
+ * }
+ * 
+ * @route PATCH /api/workouts
+ * @returns {Promise<NextResponse>} JSON response with success status or error
+ */
 export async function PATCH(request: Request) {
   try {
+    // Verify authentication
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
@@ -143,7 +193,7 @@ export async function PATCH(request: Request) {
       );
     }
     
-    // Update each workout's order
+    // Prepare database operations for each workout update
     const updates = [];
     for (const item of data.workouts) {
       if (!item.id || item.order === undefined) continue;
@@ -152,7 +202,7 @@ export async function PATCH(request: Request) {
         prisma.workout.update({
           where: { 
             id: item.id,
-            userId: session.user.id // Security check
+            userId: session.user.id // Security check to ensure ownership
           },
           data: { 
             order: item.order,
@@ -162,7 +212,8 @@ export async function PATCH(request: Request) {
       );
     }
     
-    // Execute all updates
+    // Execute all updates in a transaction
+    // This ensures all updates succeed or fail together
     await prisma.$transaction(updates);
     
     return NextResponse.json({ success: true });
