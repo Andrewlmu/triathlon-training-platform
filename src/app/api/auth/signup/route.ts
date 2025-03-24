@@ -22,43 +22,36 @@ import { Prisma } from "@prisma/client";
  */
 export async function POST(req: Request) {
   try {
-    console.log("Starting signup process");
     const { name, email, password } = await req.json();
-    
+
     // Validate input
     if (!email || !password) {
-      console.log("Validation failed: Missing email or password");
       return NextResponse.json(
         { error: "Email and password required" },
         { status: 400 }
       );
     }
-    
-    console.log("Checking for existing user");
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email }
     });
-    
+
     if (existingUser) {
-      console.log("User already exists with email:", email);
       return NextResponse.json(
         { error: "Email already in use" },
         { status: 400 }
       );
     }
-    
-    console.log("Hashing password");
+
     // Hash password with bcrypt for secure storage
     // Salt factor of 10 provides a good balance of security and performance
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    console.log("Starting database transaction");
+
     try {
       // Use transaction to ensure both user and credentials are created together
       // This maintains data integrity - either both succeed or both fail
       const result = await prisma.$transaction(async (tx) => {
-        console.log("Creating user");
         // Create the user record first
         const user = await tx.user.create({
           data: {
@@ -66,8 +59,7 @@ export async function POST(req: Request) {
             email
           }
         });
-        
-        console.log("User created, now creating credentials");
+
         // Create user credentials with password
         // Linked to user by userId foreign key
         const credentials = await tx.userCredential.create({
@@ -76,18 +68,17 @@ export async function POST(req: Request) {
             password: hashedPassword
           }
         });
-        
+
         return { user };
       });
-      
-      console.log("Transaction completed successfully");
+
       // Return user data without sensitive fields
-      return NextResponse.json({ 
-        user: { 
-          id: result.user.id, 
-          name: result.user.name, 
-          email: result.user.email 
-        } 
+      return NextResponse.json({
+        user: {
+          id: result.user.id,
+          name: result.user.name,
+          email: result.user.email
+        }
       }, { status: 201 });
     } catch (error) {
       // Type guard for Prisma errors to provide better error logging
@@ -105,7 +96,7 @@ export async function POST(req: Request) {
   } catch (error: unknown) {
     // Handle any error type safely with detailed logging
     let errorMessage = "An error occurred while creating your account";
-    
+
     // Type guard for Error objects
     if (error instanceof Error) {
       console.error("Error creating user:", {
@@ -116,7 +107,7 @@ export async function POST(req: Request) {
     } else {
       console.error("Unknown error type:", error);
     }
-    
+
     // Type guard for Prisma errors to provide better debugging info
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       console.error("Prisma error details:", {
@@ -124,7 +115,7 @@ export async function POST(req: Request) {
         meta: error.meta
       });
     }
-    
+
     return NextResponse.json(
       { error: errorMessage },
       { status: 500 }

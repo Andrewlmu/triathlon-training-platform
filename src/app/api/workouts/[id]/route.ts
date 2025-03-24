@@ -116,7 +116,6 @@ export async function PATCH(
     }
 
     const data = await request.json();
-    console.log("Updating workout with data:", data);
 
     // Handle date conversion if it exists
     if (data.date) {

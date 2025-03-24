@@ -56,7 +56,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
   const [durationHours, setDurationHours] = useState('');
   const [description, setDescription] = useState('');
   const [labelId, setLabelId] = useState<string>('');
-  
+
   const { labels, createDefaultLabels } = useLabels();
 
   // Create default labels when component mounts if none exist
@@ -104,7 +104,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
    */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const updatedWorkout: Workout = {
       id: workout?.id || Date.now().toString(),
       type: workoutType,
@@ -116,9 +116,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
       userId: workout?.userId || '',
       order: workout?.order || 0,
     };
-    
-    console.log("Saving workout with labelId:", labelId);
-    
+
     onSave(updatedWorkout);
     onClose();
   };
@@ -136,19 +134,19 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
       'Anaerobic',
       'Sprints',
     ];
-    
+
     const indexA = zoneOrder.indexOf(a.name);
     const indexB = zoneOrder.indexOf(b.name);
-    
+
     // If both labels are in our predefined order, sort by that order
     if (indexA !== -1 && indexB !== -1) {
       return indexA - indexB;
     }
-    
+
     // If only one label is in our predefined order, prioritize it
     if (indexA !== -1) return -1;
     if (indexB !== -1) return 1;
-    
+
     // Otherwise sort alphabetically
     return a.name.localeCompare(b.name);
   });
@@ -218,11 +216,11 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
               </select>
               {/* Color indicator for selected label */}
               <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                <div 
+                <div
                   className="h-4 w-4 rounded-full"
-                  style={{ 
-                    backgroundColor: labelId 
-                      ? labels.find(l => l.id === labelId)?.color || 'transparent' 
+                  style={{
+                    backgroundColor: labelId
+                      ? labels.find(l => l.id === labelId)?.color || 'transparent'
                       : 'transparent'
                   }}
                 ></div>
