@@ -5,14 +5,29 @@ import { useLabels } from '@/context/LabelContext';
 import { X, Plus, Trash, Check, Edit, RefreshCw } from 'lucide-react';
 import { WorkoutLabel } from '@/types/workout';
 
+/**
+ * LabelManager Component
+ * 
+ * Component for managing workout intensity labels.
+ * Provides UI for creating, editing, deleting, and resetting workout labels.
+ * Displays labels in a modal with color selection and name editing.
+ * 
+ * @returns A component for managing workout labels
+ */
 export default function LabelManager() {
+  // Get label data and functions from context
   const { labels, isLoading, addLabel, updateLabel, deleteLabel, resetToDefaultLabels } = useLabels();
+  
+  // Local state for UI management
   const [showModal, setShowModal] = useState(false);
   const [newLabelName, setNewLabelName] = useState('');
   const [newLabelColor, setNewLabelColor] = useState('#3B82F6');
   const [editMode, setEditMode] = useState<{ id: string; name: string; color: string } | null>(null);
   const [isResetting, setIsResetting] = useState(false);
 
+  /**
+   * Add a new label with the current input values
+   */
   const handleAddLabel = async () => {
     if (!newLabelName.trim()) return;
     
@@ -22,6 +37,7 @@ export default function LabelManager() {
         color: newLabelColor
       });
       
+      // Reset form after adding
       setNewLabelName('');
       setNewLabelColor('#3B82F6');
     } catch (error) {
@@ -29,6 +45,9 @@ export default function LabelManager() {
     }
   };
 
+  /**
+   * Save changes to an existing label that's being edited
+   */
   const handleUpdateLabel = async () => {
     if (!editMode || !editMode.name.trim()) return;
     
@@ -38,12 +57,18 @@ export default function LabelManager() {
         color: editMode.color
       });
       
+      // Exit edit mode after updating
       setEditMode(null);
     } catch (error) {
       console.error('Failed to update label:', error);
     }
   };
 
+  /**
+   * Delete a label after confirmation
+   * 
+   * @param id - ID of the label to delete
+   */
   const handleDeleteLabel = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this label?')) {
       try {
@@ -54,6 +79,9 @@ export default function LabelManager() {
     }
   };
 
+  /**
+   * Reset to default training zone labels after confirmation
+   */
   const handleResetLabels = async () => {
     if (window.confirm('Are you sure you want to reset to default labels? This will delete all your custom labels.')) {
       try {
@@ -67,6 +95,7 @@ export default function LabelManager() {
     }
   };
 
+  // Predefined color options for label creation and editing
   const colorOptions = [
     '#9CA3AF', // Gray
     '#3B82F6', // Blue
@@ -80,8 +109,9 @@ export default function LabelManager() {
     '#EC4899'  // Pink
   ];
 
-  // Order labels by training intensity
+  // Order labels by training intensity for consistent display
   const orderedLabels = [...labels].sort((a, b) => {
+    // Physiological order of training zones
     const zoneOrder = [
       'Recovery',
       'Zone 2',
@@ -96,12 +126,12 @@ export default function LabelManager() {
     const indexA = zoneOrder.indexOf(a.name);
     const indexB = zoneOrder.indexOf(b.name);
     
-    // If both labels are in our predefined order, sort by that order
+    // If both labels are in predefined zones, sort by intensity
     if (indexA !== -1 && indexB !== -1) {
       return indexA - indexB;
     }
     
-    // If only one label is in our predefined order, prioritize it
+    // If only one label is a standard zone, prioritize it
     if (indexA !== -1) return -1;
     if (indexB !== -1) return 1;
     
@@ -111,6 +141,7 @@ export default function LabelManager() {
 
   return (
     <div>
+      {/* Button to open the label manager modal */}
       <button
         onClick={() => setShowModal(true)}
         className="block px-4 py-2 text-sm font-medium text-white bg-[#333333] hover:bg-[#444444] rounded-md transition"
@@ -118,9 +149,11 @@ export default function LabelManager() {
         Manage Labels
       </button>
 
+      {/* Label Manager Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className="bg-[#1E1E1E] rounded-lg shadow-2xl w-full max-w-md border border-[#333333]">
+            {/* Modal Header */}
             <div className="p-4 border-b border-[#333333] flex justify-between items-center">
               <h2 className="text-xl font-semibold text-white">Manage Labels</h2>
               <button 
@@ -144,7 +177,7 @@ export default function LabelManager() {
                 </button>
               </div>
 
-              {/* Existing Labels */}
+              {/* Existing Labels List */}
               <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
                 {isLoading ? (
                   <p className="text-[#A0A0A0]">Loading labels...</p>
@@ -154,6 +187,7 @@ export default function LabelManager() {
                   orderedLabels.map(label => (
                     <div key={label.id} className="flex items-center justify-between p-2 rounded bg-[#252525]">
                       {editMode?.id === label.id ? (
+                        /* Edit Mode UI */
                         <>
                           <div className="flex items-center gap-2 flex-grow">
                             <div 
@@ -196,6 +230,7 @@ export default function LabelManager() {
                           </div>
                         </>
                       ) : (
+                        /* View Mode UI */
                         <>
                           <div className="flex items-center gap-2">
                             <div 
@@ -229,7 +264,7 @@ export default function LabelManager() {
                 )}
               </div>
 
-              {/* Add New Label */}
+              {/* Add New Label Form */}
               <div className="pt-4 border-t border-[#333333]">
                 <h3 className="text-sm font-semibold text-white mb-2">Add New Label</h3>
                 <div className="flex gap-2">
@@ -263,6 +298,7 @@ export default function LabelManager() {
                     <Plus className="h-5 w-5" />
                   </button>
                 </div>
+                {/* Color Palette Shortcuts */}
                 <div className="flex gap-1 mt-2">
                   {colorOptions.map(color => (
                     <button
@@ -279,6 +315,7 @@ export default function LabelManager() {
               </div>
             </div>
 
+            {/* Modal Footer */}
             <div className="p-4 border-t border-[#333333] flex justify-end">
               <button
                 onClick={() => setShowModal(false)}

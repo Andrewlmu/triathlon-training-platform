@@ -31,7 +31,16 @@ import { useWorkouts } from "@/context/WorkoutContext";
 import { useLabels } from "@/context/LabelContext";
 
 /**
- * Droppable Day Component to make each day a valid drop target
+ * DroppableDay Component
+ * 
+ * Creates a droppable target area for each calendar day in the drag-and-drop system.
+ * Each day becomes a drop zone where workouts can be dragged to.
+ * 
+ * @param id - Unique identifier for the droppable area
+ * @param children - Child components to render within the droppable area
+ * @param className - Additional CSS classes to apply
+ * @param isActive - Whether this drop area is currently active (being targeted)
+ * @returns A div that acts as a drop target for workouts
  */
 const DroppableDay = ({
   id,
@@ -58,9 +67,18 @@ const DroppableDay = ({
 };
 
 /**
- * Sortable Workout Item Component
+ * SortableWorkoutItem Component
+ * 
+ * Renders a workout item that can be dragged, sorted, and reordered within the calendar.
+ * Displays workout information with appropriate styling based on workout type and label.
+ * 
+ * @param workout - The workout data to display
+ * @param onClick - Callback function when the workout item is clicked
+ * @param labels - Array of available workout labels for styling
+ * @returns A draggable workout component with type icon, title and duration
  */
 const SortableWorkoutItem = ({ workout, onClick, labels }: { workout: Workout; onClick: () => void; labels: any[] }) => {
+  // Set up sortable functionality using dnd-kit
   const {
     attributes,
     listeners,
@@ -70,10 +88,12 @@ const SortableWorkoutItem = ({ workout, onClick, labels }: { workout: Workout; o
     isDragging
   } = useSortable({ id: workout.id });
 
+  // Find the label for this workout if it has one
   const workoutLabel = workout.labelId
     ? labels.find(l => l.id === workout.labelId)
     : null;
 
+  // Prepare styling based on dragging state and workout label
   const style = {
     transition,
     transform: CSS.Transform.toString(transform),
@@ -84,11 +104,21 @@ const SortableWorkoutItem = ({ workout, onClick, labels }: { workout: Workout; o
     } : {})
   };
 
+  /**
+   * Formats workout duration from minutes to hours display format
+   * @param minutes - Duration in minutes
+   * @returns Formatted string with hours
+   */
   const formatDuration = (minutes: number): string => {
     const hours = minutes / 60;
     return `${hours.toFixed(1)}h`;
   };
 
+  /**
+   * Returns the appropriate icon component based on workout type
+   * @param type - The workout type (Swim, Bike, or Run)
+   * @returns React icon component with appropriate styling
+   */
   const getWorkoutIcon = (type: WorkoutType) => {
     switch (type) {
       case "Swim":
@@ -121,7 +151,19 @@ const SortableWorkoutItem = ({ workout, onClick, labels }: { workout: Workout; o
 };
 
 /**
- * Day Container Component for Workouts
+ * DayContainer Component
+ * 
+ * Renders a single day cell in the calendar with all associated workouts.
+ * Handles the layout of workouts within a day and provides UI for adding new workouts.
+ * 
+ * @param day - The date object representing this day
+ * @param workouts - Array of workouts scheduled for this day
+ * @param isCurrentDay - Whether this is the current day (today)
+ * @param onAddWorkout - Callback function when add workout button is clicked
+ * @param onSelectWorkout - Callback function when a workout is selected
+ * @param totalDuration - Total duration of all workouts for this day in minutes
+ * @param labels - Array of available workout labels
+ * @returns A day cell component with workouts and add button
  */
 const DayContainer = ({
   day,
@@ -140,8 +182,14 @@ const DayContainer = ({
   totalDuration: number;
   labels: any[]
 }) => {
+  // Create unique identifier for this day's drop target
   const dayId = `day-${format(day, 'yyyy-MM-dd')}`;
 
+  /**
+   * Formats workout duration from minutes to hours display format
+   * @param minutes - Duration in minutes
+   * @returns Formatted string with hours
+   */
   const formatDuration = (minutes: number): string => {
     const hours = minutes / 60;
     return `${hours.toFixed(1)}h`;
@@ -162,7 +210,7 @@ const DayContainer = ({
         )}
       </div>
 
-      {/* Sortable Area */}
+      {/* Sortable Area - Container for the day's workouts */}
       <div className="mt-1 space-y-1.5 flex-grow overflow-y-auto max-h-28">
         <SortableContext items={workouts.map(w => w.id)} strategy={rectSortingStrategy}>
           {workouts.map((workout) => (
@@ -191,8 +239,17 @@ const DayContainer = ({
 /**
  * TrainingCalendar Component
  * 
- * Provides a monthly calendar view for planning and viewing triathlon workouts.
- * Allows for adding, editing, deleting, and reordering workouts.
+ * Main calendar interface component for the triathlon training platform.
+ * Provides a monthly calendar view with drag-and-drop workout management,
+ * workout creation/editing, and week copying functionality.
+ * 
+ * Features:
+ * - Monthly calendar navigation
+ * - Drag and drop workout management
+ * - Workout creation, editing, and viewing
+ * - Copy week functionality for repeating training blocks
+ * 
+ * @returns A fully interactive training calendar component
  */
 const TrainingCalendar = () => {
   // State management for calendar view and interactions
@@ -209,6 +266,8 @@ const TrainingCalendar = () => {
   const { labels } = useLabels();
 
   // Configure sensors for drag and drop
+  // MouseSensor requires a minimum drag distance to prevent accidental drags
+  // TouchSensor has a delay to distinguish between taps and drags on touch devices
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -223,7 +282,7 @@ const TrainingCalendar = () => {
     })
   );
 
-  // Initialize date state
+  // Initialize calendar with current month on component mount
   useEffect(() => {
     setCurrentMonth(new Date());
   }, []);
@@ -238,16 +297,18 @@ const TrainingCalendar = () => {
   }
 
   // Calculate calendar days for the current month view
+  // This generates the days array used to render the calendar grid
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  const weekStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const weekStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Start week on Monday
   const weekEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   /**
    * Handle saving a new workout or updating an existing one
-   * @param date The date to save the workout on
-   * @param workout The workout data to save
+   * 
+   * @param date - The date to save the workout on
+   * @param workout - The workout data to save
    */
   const handleSaveWorkout = async (date: Date, workout: Workout) => {
     try {
@@ -269,8 +330,9 @@ const TrainingCalendar = () => {
   };
 
   /**
-   * Handle deleting a workout (removed confirmation)
-   * @param workoutId The ID of the workout to delete
+   * Handle deleting a workout 
+   * 
+   * @param workoutId - The ID of the workout to delete
    */
   const handleDeleteWorkout = async (workoutId: string) => {
     try {
@@ -289,7 +351,8 @@ const TrainingCalendar = () => {
 
   /**
    * Calculate the total duration of all workouts for a day
-   * @param workouts Array of workouts for a day
+   * 
+   * @param workouts - Array of workouts for a day
    * @returns Total duration in minutes
    */
   const calculateDayTotalDuration = (workouts: Workout[]): number => {
@@ -298,10 +361,12 @@ const TrainingCalendar = () => {
 
   /**
    * Get workouts for a specific date
-   * @param date The date to get workouts for
-   * @returns Array of workouts for that date
+   * 
+   * @param date - The date to get workouts for
+   * @returns Array of workouts for that date, sorted by order
    */
   const getWorkoutsForDay = (date: Date): Workout[] => {
+    // Filter workouts that match this specific day
     const filteredWorkouts = workouts.filter(workout => {
       const workoutDate = new Date(workout.date);
       return (
@@ -311,13 +376,14 @@ const TrainingCalendar = () => {
       );
     });
 
-    // Sort by order field
+    // Sort by order field to maintain user-defined sequence
     return filteredWorkouts.sort((a, b) => a.order - b.order);
   };
 
   /**
-   * Generate a droppable ID for a day
-   * @param date The date to generate an ID for
+   * Generate a unique droppable ID for a day
+   * 
+   * @param date - The date to generate an ID for
    * @returns A unique string ID for the day
    */
   const getDayId = (date: Date): string => {
@@ -326,6 +392,9 @@ const TrainingCalendar = () => {
 
   /**
    * Handle the start of a drag operation
+   * Tracks which workout is being dragged and from which day
+   * 
+   * @param event - The drag start event
    */
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -334,9 +403,10 @@ const TrainingCalendar = () => {
     // Find the dragged workout
     const workout = workouts.find(w => w.id === workoutId);
     if (workout) {
+      // Store the active workout for the drag overlay
       setActiveWorkout(workout);
 
-      // Find which day this workout belongs to
+      // Track which day this workout belongs to for highlighting
       const workoutDate = new Date(workout.date);
       setActiveDayId(getDayId(workoutDate));
     }
@@ -344,6 +414,9 @@ const TrainingCalendar = () => {
 
   /**
    * Handle the end of a drag operation
+   * Manages reordering workouts within a day or moving workouts between days
+   * 
+   * @param event - The drag end event
    */
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -400,7 +473,7 @@ const TrainingCalendar = () => {
       console.log('Dropped on workout in day:', destinationDayId);
     }
 
-    // Parse the destination date
+    // Parse the destination date from the day ID
     const destinationDateStr = destinationDayId.replace('day-', '');
     const [yearStr, monthStr, dayStr] = destinationDateStr.split('-');
     const year = parseInt(yearStr);
@@ -426,6 +499,7 @@ const TrainingCalendar = () => {
 
       // Only reorder if dropped on another workout
       if (isTargetWorkout) {
+        // Find the source and target positions within the day's workouts
         const sourceIndex = sourceWorkouts.findIndex(w => w.id === workoutId);
         const targetIndex = sourceWorkouts.findIndex(w => w.id === targetId);
 
@@ -436,7 +510,10 @@ const TrainingCalendar = () => {
 
         console.log('Reordering from position', sourceIndex, 'to', targetIndex);
 
+        // Use arrayMove utility to create a new array with the workout moved to target position
         const reorderedWorkouts = arrayMove(sourceWorkouts, sourceIndex, targetIndex);
+        
+        // Update the order property for all workouts in the day to match their new positions
         updatedWorkouts = reorderedWorkouts.map((workout, index) => ({
           id: workout.id,
           order: index
@@ -453,9 +530,11 @@ const TrainingCalendar = () => {
         return;
       }
 
+      // Create a new array of workouts for the source day, removing the dragged workout
       const updatedSourceWorkouts = [...sourceWorkouts];
       updatedSourceWorkouts.splice(sourceIndex, 1);
 
+      // Update order properties for remaining workouts in source day
       const sourceUpdates = updatedSourceWorkouts.map((workout, index) => ({
         id: workout.id,
         order: index
@@ -478,23 +557,26 @@ const TrainingCalendar = () => {
         console.log('Adding to end of destination day, position', insertIndex);
       }
 
+      // Create a new array of workouts for the destination day with the dragged workout inserted
       const updatedDestWorkouts = [...destinationWorkouts];
       updatedDestWorkouts.splice(insertIndex, 0, {
         ...draggedWorkout,
         date: formattedDestinationDate
       });
 
+      // Update order properties and date for workouts in destination day
       const destUpdates = updatedDestWorkouts.map((workout, index) => ({
         id: workout.id,
         order: index,
+        // Only update date for the moved workout
         date: workout.id === workoutId ? formattedDestinationDate : undefined
       }));
 
-      // Combine all updates
+      // Combine all updates from source and destination days
       updatedWorkouts = [...sourceUpdates, ...destUpdates];
     }
 
-    // Save changes
+    // Save changes to the database
     if (updatedWorkouts.length > 0) {
       try {
         console.log('Saving updates:', updatedWorkouts);
@@ -509,6 +591,9 @@ const TrainingCalendar = () => {
 
   /**
    * Render function for drag overlay
+   * Creates a visual representation of the workout being dragged
+   * 
+   * @returns A styled representation of the active workout for drag overlay
    */
   const renderDragOverlay = () => {
     if (!activeWorkout) return null;
@@ -590,7 +675,7 @@ const TrainingCalendar = () => {
         </div>
       </div>
 
-      {/* DndContext for drag and drop functionality */}
+      {/* DndContext provides drag and drop functionality for the entire calendar */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

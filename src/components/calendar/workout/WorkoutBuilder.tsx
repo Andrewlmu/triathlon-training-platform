@@ -5,6 +5,11 @@ import { X } from 'lucide-react';
 import { Workout, WorkoutType } from '@/types/workout';
 import { useLabels } from '@/context/LabelContext';
 
+/**
+ * WorkoutBuilderProps Interface
+ * 
+ * Props for the WorkoutBuilder component that creates or edits workouts
+ */
 interface WorkoutBuilderProps {
   date: Date;
   workout?: Workout | null;
@@ -12,15 +17,40 @@ interface WorkoutBuilderProps {
   onSave: (workout: Workout) => void;
 }
 
+/**
+ * Convert hours (with decimals) to minutes
+ * 
+ * @param hours - Duration in hours (e.g., 1.5 for 1.5 hours)
+ * @returns Number of minutes (e.g., 90 minutes)
+ */
 const hoursToMinutes = (hours: number): number => {
   return Math.round(hours * 60);
 };
 
+/**
+ * Convert minutes to hours formatted as a string with one decimal place
+ * 
+ * @param minutes - Duration in minutes
+ * @returns Formatted hours string (e.g., "1.5")
+ */
 const minutesToHours = (minutes: number): string => {
   return (minutes / 60).toFixed(1);
 };
 
+/**
+ * WorkoutBuilder Component
+ * 
+ * Modal form for creating new workouts or editing existing ones.
+ * Provides fields for all workout attributes: type, title, label, duration, and details.
+ * 
+ * @param date - The date for the workout
+ * @param workout - Optional existing workout data (if editing)
+ * @param onClose - Function to call when closing the form
+ * @param onSave - Function to call when saving the workout
+ * @returns A modal form component for workout creation/editing
+ */
 const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose, onSave }) => {
+  // State for form fields
   const [workoutType, setWorkoutType] = useState<WorkoutType>('Bike');
   const [title, setTitle] = useState('');
   const [durationHours, setDurationHours] = useState('');
@@ -29,7 +59,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
   
   const { labels, createDefaultLabels } = useLabels();
 
-  // Create default labels when component mounts
+  // Create default labels when component mounts if none exist
   useEffect(() => {
     if (labels.length === 0) {
       createDefaultLabels();
@@ -47,6 +77,11 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
     }
   }, [workout]);
 
+  /**
+   * Validate and handle duration input, ensuring only valid numerical entries
+   * 
+   * @param value - The input string from the duration field
+   */
   const handleDurationInput = (value: string) => {
     // Allow empty string and decimal point
     if (value === '' || value === '.') {
@@ -61,13 +96,19 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
     }
   };
 
+  /**
+   * Handle form submission
+   * Creates a new workout object or updates an existing one
+   * 
+   * @param e - Form submit event
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     const updatedWorkout: Workout = {
       id: workout?.id || Date.now().toString(),
       type: workoutType,
-      title: title.trim() || workoutType,
+      title: title.trim() || workoutType,  // Use type as title if not provided
       description,
       duration: hoursToMinutes(parseFloat(durationHours) || 0),
       date: date.toISOString(),
@@ -82,8 +123,9 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
     onClose();
   };
 
-  // Order labels by training intensity
+  // Order labels by training intensity for better UX
   const orderedLabels = [...labels].sort((a, b) => {
+    // Predefined physiological order of training zones
     const zoneOrder = [
       'Recovery',
       'Zone 2',
@@ -114,6 +156,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
       <div className="bg-[#1E1E1E] rounded-lg shadow-2xl w-full max-w-lg border border-[#333333]">
+        {/* Modal Header */}
         <div className="p-4 border-b border-[#333333] flex justify-between items-center">
           <h2 className="text-xl font-semibold text-white">
             {workout ? 'Edit Workout' : 'Add Workout'}
@@ -123,7 +166,9 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
           </button>
         </div>
 
+        {/* Workout Form */}
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {/* Workout Type Selection */}
           <div>
             <label className="block text-sm font-medium text-white mb-1">
               Type
@@ -139,6 +184,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
             </select>
           </div>
 
+          {/* Workout Title Input */}
           <div>
             <label className="block text-sm font-medium text-white mb-1">
               Title
@@ -152,6 +198,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
             />
           </div>
 
+          {/* Workout Label Selection */}
           <div>
             <label className="block text-sm font-medium text-white mb-1">
               Label
@@ -169,6 +216,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
                   </option>
                 ))}
               </select>
+              {/* Color indicator for selected label */}
               <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                 <div 
                   className="h-4 w-4 rounded-full"
@@ -182,6 +230,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
             </div>
           </div>
 
+          {/* Duration Input */}
           <div>
             <label className="block text-sm font-medium text-white mb-1">
               Duration (hours)
@@ -196,6 +245,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
             />
           </div>
 
+          {/* Workout Details Textarea */}
           <div>
             <label className="block text-sm font-medium text-white mb-1">
               Workout Details
@@ -209,6 +259,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
             />
           </div>
 
+          {/* Form Buttons */}
           <div className="flex justify-end gap-2 pt-4">
             <button
               type="button"
