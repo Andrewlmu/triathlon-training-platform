@@ -431,13 +431,6 @@ const TrainingCalendar = () => {
     const workoutId = active.id as string;
     const targetId = over.id;
 
-    console.log('Drop event:', {
-      workoutId,
-      targetId,
-      activeId: active.id,
-      overId: over.id
-    });
-
     // Find the dragged workout
     const draggedWorkout = workouts.find(w => w.id === workoutId);
     if (!draggedWorkout) {
@@ -460,7 +453,6 @@ const TrainingCalendar = () => {
     if (isTargetDay) {
       // If dropped directly on a day
       destinationDayId = targetId as string;
-      console.log('Dropped on day:', destinationDayId);
     } else {
       // If dropped on a workout, find which day it belongs to
       const targetWorkout = workouts.find(w => w.id === targetId);
@@ -470,7 +462,6 @@ const TrainingCalendar = () => {
       }
       const targetDate = new Date(targetWorkout.date);
       destinationDayId = getDayId(targetDate);
-      console.log('Dropped on workout in day:', destinationDayId);
     }
 
     // Parse the destination date from the day ID
@@ -488,14 +479,11 @@ const TrainingCalendar = () => {
     const destinationDate = new Date(year, month, day);
     const destinationWorkouts = getWorkoutsForDay(destinationDate);
 
-    console.log('Source day:', sourceDayId, 'Destination day:', destinationDayId);
-
     // Prepare workouts to update
     let updatedWorkouts: { id: string; order: number; date?: string }[] = [];
 
     // Handle same day reordering
     if (sourceDayId === destinationDayId) {
-      console.log('Same day reordering');
 
       // Only reorder if dropped on another workout
       if (isTargetWorkout) {
@@ -508,11 +496,9 @@ const TrainingCalendar = () => {
           return;
         }
 
-        console.log('Reordering from position', sourceIndex, 'to', targetIndex);
-
         // Use arrayMove utility to create a new array with the workout moved to target position
         const reorderedWorkouts = arrayMove(sourceWorkouts, sourceIndex, targetIndex);
-        
+
         // Update the order property for all workouts in the day to match their new positions
         updatedWorkouts = reorderedWorkouts.map((workout, index) => ({
           id: workout.id,
@@ -520,8 +506,6 @@ const TrainingCalendar = () => {
         }));
       }
     } else {
-      // Moving to a different day
-      console.log('Moving to different day');
 
       // Handle source day - remove workout
       const sourceIndex = sourceWorkouts.findIndex(w => w.id === workoutId);
@@ -550,11 +534,9 @@ const TrainingCalendar = () => {
         // If dropped on a specific workout, insert at that position
         const targetIndex = destinationWorkouts.findIndex(w => w.id === targetId);
         insertIndex = targetIndex !== -1 ? targetIndex : destinationWorkouts.length;
-        console.log('Inserting at position', insertIndex, 'in destination day');
       } else {
         // If dropped on the day container, add to the end
         insertIndex = destinationWorkouts.length;
-        console.log('Adding to end of destination day, position', insertIndex);
       }
 
       // Create a new array of workouts for the destination day with the dragged workout inserted
@@ -579,13 +561,12 @@ const TrainingCalendar = () => {
     // Save changes to the database
     if (updatedWorkouts.length > 0) {
       try {
-        console.log('Saving updates:', updatedWorkouts);
         await reorderWorkouts(updatedWorkouts);
       } catch (error) {
         console.error('Error reordering workouts:', error);
       }
     } else {
-      console.log('No updates to save');
+      // No updates to save
     }
   };
 
@@ -756,7 +737,7 @@ const TrainingCalendar = () => {
           }}
         />
       )}
-      
+
       {/* Copy Week Modal */}
       {showCopyWeekModal && (
         <CopyWeekModal
