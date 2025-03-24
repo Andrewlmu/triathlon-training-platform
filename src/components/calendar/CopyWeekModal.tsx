@@ -1,14 +1,22 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { X, Copy, Calendar } from 'lucide-react';
 import { useWorkouts } from '@/context/WorkoutContext';
-import { startOfWeek, endOfWeek, addWeeks, format, eachDayOfInterval, parseISO, differenceInDays } from 'date-fns';
+import {
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  format,
+  eachDayOfInterval,
+  parseISO,
+  differenceInDays,
+} from 'date-fns';
 import { Workout } from '@/types/workout';
 
 /**
  * CopyWeekModalProps Interface
- * 
+ *
  * Props for the CopyWeekModal component
  */
 interface CopyWeekModalProps {
@@ -17,11 +25,11 @@ interface CopyWeekModalProps {
 
 /**
  * CopyWeekModal Component
- * 
+ *
  * Modal component for copying workouts from one week to another.
  * Allows users to select source and target weeks and preview what will be copied.
  * Maintains the same day-of-week schedule when copying workouts.
- * 
+ *
  * @param onClose - Function to call when closing the modal
  * @returns A modal component for copying workout weeks
  */
@@ -38,7 +46,7 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
   // Get source week start (Monday) and end dates (Sunday)
   const sourceWeekStart = startOfWeek(sourceDate, { weekStartsOn: 1 });
   const sourceWeekEnd = endOfWeek(sourceDate, { weekStartsOn: 1 });
-  
+
   // Get target week start and end dates
   const targetWeekStart = startOfWeek(targetDate, { weekStartsOn: 1 });
   const targetWeekEnd = endOfWeek(targetDate, { weekStartsOn: 1 });
@@ -49,17 +57,17 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
 
   /**
    * Handle source date input change with proper week start alignment
-   * 
+   *
    * @param dateString - Date string from the date input
    */
   const handleSourceDateChange = (dateString: string) => {
     const selectedDate = parseISO(dateString);
     setSourceDate(selectedDate);
   };
-  
+
   /**
    * Handle target date input change with proper week start alignment
-   * 
+   *
    * @param dateString - Date string from the date input
    */
   const handleTargetDateChange = (dateString: string) => {
@@ -69,7 +77,7 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
 
   /**
    * Get an array of days in a week
-   * 
+   *
    * @param date - Any date in the week
    * @returns Array of Date objects for each day in the week
    */
@@ -81,13 +89,13 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
 
   /**
    * Get workouts for a specific day
-   * 
+   *
    * @param date - The date to find workouts for
    * @param allWorkouts - Array of all workouts to filter from
    * @returns Array of workouts scheduled for the specified date
    */
   const getWorkoutsForDay = (date: Date, allWorkouts: Workout[]): Workout[] => {
-    return allWorkouts.filter(workout => {
+    return allWorkouts.filter((workout) => {
       const workoutDate = new Date(workout.date);
       return (
         workoutDate.getFullYear() === date.getFullYear() &&
@@ -99,14 +107,14 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
 
   // Count workouts to be copied by type for preview
   const sourceWeekDays = getDaysInWeek(sourceDate);
-  const sourceWeekWorkouts = sourceWeekDays.flatMap(day => getWorkoutsForDay(day, workouts));
-  
+  const sourceWeekWorkouts = sourceWeekDays.flatMap((day) => getWorkoutsForDay(day, workouts));
+
   // Calculate totals for each sport type
   const workoutCounts = {
     total: sourceWeekWorkouts.length,
-    swim: sourceWeekWorkouts.filter(w => w.type === 'Swim').length,
-    bike: sourceWeekWorkouts.filter(w => w.type === 'Bike').length,
-    run: sourceWeekWorkouts.filter(w => w.type === 'Run').length,
+    swim: sourceWeekWorkouts.filter((w) => w.type === 'Swim').length,
+    bike: sourceWeekWorkouts.filter((w) => w.type === 'Bike').length,
+    run: sourceWeekWorkouts.filter((w) => w.type === 'Run').length,
   };
 
   /**
@@ -117,14 +125,14 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
     try {
       setIsSubmitting(true);
       setError(null);
-      
+
       if (sourceWeekWorkouts.length === 0) {
-        setError("No workouts to copy from the selected week");
+        setError('No workouts to copy from the selected week');
         return;
       }
-      
+
       await copyWorkoutsToWeek(sourceWeekStart, targetWeekStart);
-      
+
       // Show success message and auto-close after delay
       setSuccess(true);
       setTimeout(() => {
@@ -132,7 +140,7 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
       }, 1500);
     } catch (err) {
       console.error('Error copying week:', err);
-      setError("Failed to copy workouts. Please try again.");
+      setError('Failed to copy workouts. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -166,7 +174,7 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
                   {error}
                 </div>
               )}
-              
+
               {/* Source Week Selection */}
               <div>
                 <label className="block text-sm font-medium text-white mb-1">
@@ -187,7 +195,7 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
                   Week: {format(sourceWeekStart, 'MMM d')} to {format(sourceWeekEnd, 'MMM d')}
                 </p>
               </div>
-              
+
               {/* Target Week Selection */}
               <div>
                 <label className="block text-sm font-medium text-white mb-1">
@@ -208,7 +216,7 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
                   Week: {format(targetWeekStart, 'MMM d')} to {format(targetWeekEnd, 'MMM d')}
                 </p>
               </div>
-              
+
               {/* Workouts Preview */}
               <div className="mt-4 bg-[#252525] rounded-md p-4">
                 <h3 className="text-sm font-semibold text-white mb-2">Workouts to Copy</h3>
@@ -231,11 +239,16 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Explanation Text */}
               <div className="text-[#A0A0A0] text-sm mt-2">
-                <p>This will create copies of all workouts from the source week and place them in the target week on the same days of the week.</p>
-                <p className="mt-1">For example, Monday workouts will be copied to Monday, Tuesday to Tuesday, etc.</p>
+                <p>
+                  This will create copies of all workouts from the source week and place them in the
+                  target week on the same days of the week.
+                </p>
+                <p className="mt-1">
+                  For example, Monday workouts will be copied to Monday, Tuesday to Tuesday, etc.
+                </p>
               </div>
             </>
           )}
@@ -256,7 +269,7 @@ const CopyWeekModal: React.FC<CopyWeekModalProps> = ({ onClose }) => {
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#121212] bg-[#FFD700] hover:bg-[#F0C800] rounded-md transition disabled:opacity-50 disabled:hover:bg-[#FFD700]"
             >
               <Copy className="h-4 w-4" />
-              {isSubmitting ? "Copying..." : "Copy Week"}
+              {isSubmitting ? 'Copying...' : 'Copy Week'}
             </button>
           )}
         </div>

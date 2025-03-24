@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React from 'react';
 import { X, Edit, Trash, Bike, Footprints, Waves } from 'lucide-react';
@@ -9,7 +9,7 @@ import { useLabels } from '@/context/LabelContext';
 
 /**
  * WorkoutDisplayProps Interface
- * 
+ *
  * Props for the WorkoutDisplay component that shows workout details
  */
 interface WorkoutDisplayProps {
@@ -20,28 +20,22 @@ interface WorkoutDisplayProps {
 
 /**
  * WorkoutDisplay Component
- * 
+ *
  * Modal component that displays detailed information about a workout.
  * Shows workout type, title, date, duration, label, and description.
  * Provides options to edit or delete the workout.
- * 
+ *
  * @param workout - The workout data to display
  * @param onClose - Function to call when closing the modal
  * @param onEdit - Optional function to call when editing the workout
  * @returns A modal component with workout details
  */
-const WorkoutDisplay: React.FC<WorkoutDisplayProps> = ({ 
-  workout, 
-  onClose,
-  onEdit
-}) => {
+const WorkoutDisplay: React.FC<WorkoutDisplayProps> = ({ workout, onClose, onEdit }) => {
   const { deleteWorkout } = useWorkouts();
   const { labels } = useLabels();
-  
+
   // Find the workout label if it exists
-  const workoutLabel = workout.labelId 
-    ? labels.find(l => l.id === workout.labelId) 
-    : null;
+  const workoutLabel = workout.labelId ? labels.find((l) => l.id === workout.labelId) : null;
 
   /**
    * Handle workout deletion
@@ -58,31 +52,29 @@ const WorkoutDisplay: React.FC<WorkoutDisplayProps> = ({
 
   /**
    * Format minutes into a more readable duration format (Xh Ym)
-   * 
+   *
    * @param minutes - Duration in minutes
    * @returns Formatted string with hours and minutes
    */
   const formatDuration = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return hours > 0 
-      ? `${hours}h ${mins > 0 ? `${mins}m` : ''}`
-      : `${mins}m`;
+    return hours > 0 ? `${hours}h ${mins > 0 ? `${mins}m` : ''}` : `${mins}m`;
   };
 
   /**
    * Get the appropriate icon component based on workout type
-   * 
+   *
    * @param type - The workout type (Swim, Bike, or Run)
    * @returns React icon component with appropriate styling
    */
-  const getWorkoutIcon = (type: "Bike" | "Run" | "Swim") => {
+  const getWorkoutIcon = (type: 'Bike' | 'Run' | 'Swim') => {
     switch (type) {
-      case "Swim":
+      case 'Swim':
         return <Waves className="h-5 w-5 text-[#00CED1]" />;
-      case "Bike":
+      case 'Bike':
         return <Bike className="h-5 w-5 text-[#1E90FF]" />;
-      case "Run":
+      case 'Run':
         return <Footprints className="h-5 w-5 text-[#E63946]" />;
     }
   };
@@ -113,12 +105,12 @@ const WorkoutDisplay: React.FC<WorkoutDisplayProps> = ({
                 {formatDuration(workout.duration)}
               </div>
             </div>
-            
+
             {/* Show label if the workout has one */}
             {workoutLabel && (
-              <div 
+              <div
                 className="px-3 py-1 rounded-md text-white"
-                style={{ 
+                style={{
                   backgroundColor: `${workoutLabel.color}66`,
                 }}
               >

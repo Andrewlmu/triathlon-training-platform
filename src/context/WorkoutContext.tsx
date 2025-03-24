@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Workout } from '@/types/workout';
@@ -7,7 +7,7 @@ import { startOfWeek, endOfWeek, eachDayOfInterval, addDays, differenceInDays } 
 
 /**
  * WorkoutContextType Interface
- * 
+ *
  * Defines the shape of the workout context including state and methods
  * for manipulating workouts throughout the application.
  */
@@ -17,7 +17,9 @@ interface WorkoutContextType {
   addWorkout: (workout: Workout) => Promise<Workout>;
   updateWorkout: (id: string, updatedWorkout: Workout) => Promise<Workout>;
   deleteWorkout: (id: string) => Promise<boolean>;
-  reorderWorkouts: (workoutsToUpdate: { id: string; order: number; date?: string }[]) => Promise<boolean>;
+  reorderWorkouts: (
+    workoutsToUpdate: { id: string; order: number; date?: string }[]
+  ) => Promise<boolean>;
   moveWorkout: (id: string, newDate: Date, newOrder: number) => Promise<boolean>;
   copyWorkoutsToWeek: (sourceWeekStart: Date, targetWeekStart: Date) => Promise<boolean>;
 }
@@ -26,27 +28,47 @@ interface WorkoutContextType {
 const WorkoutContext = createContext<WorkoutContextType>({
   workouts: [],
   isLoading: true,
-  addWorkout: async () => ({ id: '', type: 'Bike', title: '', date: '', duration: 0, order: 0, description: '', userId: '' } as Workout),
-  updateWorkout: async () => ({ id: '', type: 'Bike', title: '', date: '', duration: 0, order: 0, description: '', userId: '' } as Workout),
+  addWorkout: async () =>
+    ({
+      id: '',
+      type: 'Bike',
+      title: '',
+      date: '',
+      duration: 0,
+      order: 0,
+      description: '',
+      userId: '',
+    }) as Workout,
+  updateWorkout: async () =>
+    ({
+      id: '',
+      type: 'Bike',
+      title: '',
+      date: '',
+      duration: 0,
+      order: 0,
+      description: '',
+      userId: '',
+    }) as Workout,
   deleteWorkout: async () => false,
   reorderWorkouts: async () => false,
   moveWorkout: async () => false,
-  copyWorkoutsToWeek: async () => false
+  copyWorkoutsToWeek: async () => false,
 });
 
 /**
  * Custom hook to access the WorkoutContext
- * 
+ *
  * @returns WorkoutContextType object with workout state and functions
  */
 export const useWorkouts = () => useContext(WorkoutContext);
 
 /**
  * WorkoutProvider Component
- * 
+ *
  * Provides workout state and CRUD operations to the application.
  * Manages API interactions, loading states, and optimistic updates.
- * 
+ *
  * @param children - Child components that will have access to the workout context
  * @returns Provider component wrapping children with workout context
  */
@@ -66,15 +88,15 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
         return;
       }
-      
+
       try {
         setIsLoading(true);
         const response = await fetch('/api/workouts?include=label');
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch workouts');
         }
-        
+
         const data = await response.json();
         setWorkouts(data);
       } catch (error) {
@@ -90,7 +112,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
 
   /**
    * Add a new workout to the database
-   * 
+   *
    * @param workout - The workout data to add
    * @returns The newly created workout with server-generated ID
    * @throws Error if not logged in or if creation fails
@@ -99,13 +121,13 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
     if (!session?.user?.id) {
       throw new Error('You must be logged in to add a workout');
     }
-    
+
     try {
       const workoutWithUserId = {
         ...workout,
-        userId: session.user.id
+        userId: session.user.id,
       };
-      
+
       const response = await fetch('/api/workouts', {
         method: 'POST',
         headers: {
@@ -119,9 +141,9 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const newWorkout = await response.json();
-      
+
       // Optimistically update state with the new workout
-      setWorkouts(prev => [...prev, newWorkout]);
+      setWorkouts((prev) => [...prev, newWorkout]);
       return newWorkout;
     } catch (error) {
       console.error('Error adding workout:', error);
@@ -131,7 +153,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
 
   /**
    * Update an existing workout in the database
-   * 
+   *
    * @param id - The ID of the workout to update
    * @param updatedWorkout - The updated workout data
    * @returns The updated workout from the server
@@ -141,7 +163,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
     if (!session?.user?.id) {
       throw new Error('You must be logged in to update a workout');
     }
-    
+
     try {
       const response = await fetch(`/api/workouts/${id}`, {
         method: 'PATCH',
@@ -156,11 +178,9 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const updated = await response.json();
-      
+
       // Optimistically update the workout in state
-      setWorkouts(prev => 
-        prev.map(workout => workout.id === id ? updated : workout)
-      );
+      setWorkouts((prev) => prev.map((workout) => (workout.id === id ? updated : workout)));
       return updated;
     } catch (error) {
       console.error('Error updating workout:', error);
@@ -170,7 +190,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
 
   /**
    * Delete a workout from the database
-   * 
+   *
    * @param id - The ID of the workout to delete
    * @returns Boolean indicating success
    * @throws Error if not logged in or if deletion fails
@@ -179,7 +199,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
     if (!session?.user?.id) {
       throw new Error('You must be logged in to delete a workout');
     }
-    
+
     try {
       const response = await fetch(`/api/workouts/${id}`, {
         method: 'DELETE',
@@ -190,7 +210,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Optimistically remove the workout from state
-      setWorkouts(prev => prev.filter(workout => workout.id !== id));
+      setWorkouts((prev) => prev.filter((workout) => workout.id !== id));
       return true;
     } catch (error) {
       console.error('Error deleting workout:', error);
@@ -201,16 +221,18 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
   /**
    * Reorder multiple workouts at once
    * Used for drag-and-drop operations to update multiple workout positions
-   * 
+   *
    * @param workoutsToUpdate - Array of workouts with new order values and optional dates
    * @returns Boolean indicating success
    * @throws Error if not logged in or if reordering fails
    */
-  const reorderWorkouts = async (workoutsToUpdate: { id: string; order: number; date?: string }[]): Promise<boolean> => {
+  const reorderWorkouts = async (
+    workoutsToUpdate: { id: string; order: number; date?: string }[]
+  ): Promise<boolean> => {
     if (!session?.user?.id) {
       throw new Error('You must be logged in to reorder workouts');
     }
-    
+
     try {
       const response = await fetch('/api/workouts', {
         method: 'PATCH',
@@ -230,10 +252,10 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
       if (!freshResponse.ok) {
         throw new Error('Failed to fetch updated workouts');
       }
-      
+
       const updatedWorkouts = await freshResponse.json();
       setWorkouts(updatedWorkouts);
-      
+
       return true;
     } catch (error) {
       console.error('Error reordering workouts:', error);
@@ -244,45 +266,50 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
   /**
    * Move a single workout to a new date and/or position
    * Convenience method that uses reorderWorkouts internally
-   * 
+   *
    * @param id - The ID of the workout to move
    * @param newDate - The new date for the workout
    * @param newOrder - The new order value for the workout
    * @returns Boolean indicating success
    */
   const moveWorkout = async (id: string, newDate: Date, newOrder: number): Promise<boolean> => {
-    return reorderWorkouts([{ 
-      id, 
-      order: newOrder,
-      date: newDate.toISOString()
-    }]);
+    return reorderWorkouts([
+      {
+        id,
+        order: newOrder,
+        date: newDate.toISOString(),
+      },
+    ]);
   };
 
   /**
    * Copy all workouts from one week to another
    * Maintains the same day-of-week schedule and workout ordering
-   * 
+   *
    * @param sourceWeekStart - Start date of the source week (Monday)
    * @param targetWeekStart - Start date of the target week (Monday)
    * @returns Boolean indicating success
    * @throws Error if not logged in or if copying fails
    */
-  const copyWorkoutsToWeek = async (sourceWeekStart: Date, targetWeekStart: Date): Promise<boolean> => {
+  const copyWorkoutsToWeek = async (
+    sourceWeekStart: Date,
+    targetWeekStart: Date
+  ): Promise<boolean> => {
     if (!session?.user?.id) {
       throw new Error('You must be logged in to copy workouts');
     }
-    
+
     try {
       // Get all days in the source week
       const sourceWeekEnd = endOfWeek(sourceWeekStart, { weekStartsOn: 1 });
       const daysInSourceWeek = eachDayOfInterval({ start: sourceWeekStart, end: sourceWeekEnd });
-      
+
       // Find workouts for each day in the source week
       const workoutsToCopy: Workout[] = [];
-      
+
       for (const day of daysInSourceWeek) {
         // Filter workouts for this specific day
-        const dayWorkouts = workouts.filter(workout => {
+        const dayWorkouts = workouts.filter((workout) => {
           const workoutDate = new Date(workout.date);
           return (
             workoutDate.getFullYear() === day.getFullYear() &&
@@ -290,17 +317,17 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
             workoutDate.getDate() === day.getDate()
           );
         });
-        
+
         workoutsToCopy.push(...dayWorkouts);
       }
-      
+
       if (workoutsToCopy.length === 0) {
         return false; // No workouts to copy
       }
-      
+
       // Calculate the offset between source and target weeks
       const daysDifference = differenceInDays(targetWeekStart, sourceWeekStart);
-      
+
       // Make API call to copy workouts
       const response = await fetch('/api/workouts/copy-week', {
         method: 'POST',
@@ -310,7 +337,7 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({
           sourceWeekStart: sourceWeekStart.toISOString(),
           targetWeekStart: targetWeekStart.toISOString(),
-          daysDifference
+          daysDifference,
         }),
       });
 
@@ -323,10 +350,10 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
       if (!freshResponse.ok) {
         throw new Error('Failed to fetch updated workouts');
       }
-      
+
       const updatedWorkouts = await freshResponse.json();
       setWorkouts(updatedWorkouts);
-      
+
       return true;
     } catch (error) {
       console.error('Error copying workouts:', error);
@@ -336,16 +363,18 @@ export const WorkoutProvider = ({ children }: { children: ReactNode }) => {
 
   // Provide context to children
   return (
-    <WorkoutContext.Provider value={{ 
-      workouts, 
-      isLoading, 
-      addWorkout, 
-      updateWorkout, 
-      deleteWorkout,
-      reorderWorkouts,
-      moveWorkout,
-      copyWorkoutsToWeek
-    }}>
+    <WorkoutContext.Provider
+      value={{
+        workouts,
+        isLoading,
+        addWorkout,
+        updateWorkout,
+        deleteWorkout,
+        reorderWorkouts,
+        moveWorkout,
+        copyWorkoutsToWeek,
+      }}
+    >
       {children}
     </WorkoutContext.Provider>
   );

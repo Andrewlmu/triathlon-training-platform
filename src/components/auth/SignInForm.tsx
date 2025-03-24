@@ -1,65 +1,65 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useState } from 'react';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 /**
  * SignInForm Component
- * 
+ *
  * Provides authentication form for user login.
  * Handles validation, error states, and authentication flow.
  * Redirects to home page after successful sign-in.
- * 
+ *
  * @returns A sign-in form component with email/password authentication
  */
 export default function SignInForm() {
   // Form state
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   // Router for navigation after sign-in
   const router = useRouter();
 
   /**
    * Handle form submission
    * Validates inputs and attempts authentication
-   * 
+   *
    * @param e - Form submission event
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!email || !password) {
-      setError("Please enter both email and password");
+      setError('Please enter both email and password');
       return;
     }
-    
+
     try {
       setLoading(true);
-      setError("");
-      
+      setError('');
+
       // Attempt authentication using NextAuth
-      const result = await signIn("credentials", {
+      const result = await signIn('credentials', {
         redirect: false,
         email,
-        password
+        password,
       });
-      
+
       // Handle authentication error
       if (result?.error) {
-        setError("Invalid email or password");
+        setError('Invalid email or password');
         return;
       }
-      
+
       // Redirect to home page on success
-      router.push("/");
+      router.push('/');
       router.refresh();
     } catch (error) {
-      setError("An error occurred during sign in");
+      setError('An error occurred during sign in');
       console.error(error);
     } finally {
       setLoading(false);
@@ -70,14 +70,14 @@ export default function SignInForm() {
     <div className="w-full max-w-md mx-auto">
       <div className="bg-[#1E1E1E] rounded-lg shadow-xl p-6 border border-[#333333]">
         <h2 className="text-2xl font-bold text-white mb-6">Sign In</h2>
-        
+
         {/* Error message display */}
         {error && (
           <div className="bg-red-500 bg-opacity-20 border border-red-500 text-red-500 px-4 py-3 rounded mb-4">
             {error}
           </div>
         )}
-        
+
         {/* Sign-in form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email input */}
@@ -94,7 +94,7 @@ export default function SignInForm() {
               required
             />
           </div>
-          
+
           {/* Password input */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-white mb-1">
@@ -109,19 +109,19 @@ export default function SignInForm() {
               required
             />
           </div>
-          
+
           {/* Submit button */}
           <button
             type="submit"
             disabled={loading}
             className="w-full px-4 py-2 text-sm font-medium text-[#121212] bg-[#FFD700] hover:bg-[#F0C800] rounded-md transition disabled:opacity-50"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
-          
+
           {/* Link to sign up */}
           <p className="text-sm text-center text-[#A0A0A0] mt-4">
-            Don't have an account?{" "}
+            Don't have an account?{' '}
             <a href="/auth/signup" className="text-[#FFD700] hover:underline">
               Sign Up
             </a>

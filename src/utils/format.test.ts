@@ -36,11 +36,7 @@ describe('calculateTotalDuration', () => {
   });
 
   it('calculates total duration from an array of workouts', () => {
-    const workouts = [
-      { duration: 60 },
-      { duration: 90 },
-      { duration: 30 }
-    ];
+    const workouts = [{ duration: 60 }, { duration: 90 }, { duration: 30 }];
     expect(calculateTotalDuration(workouts)).toBe(180);
   });
 

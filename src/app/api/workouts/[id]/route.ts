@@ -5,19 +5,16 @@ import { authOptions } from '@/lib/auth';
 
 /**
  * GET Handler - Fetch a single workout by ID
- * 
+ *
  * Retrieves a specific workout with its associated label.
  * Verifies that the workout belongs to the authenticated user.
  * Authentication is required.
- * 
+ *
  * @route GET /api/workouts/:id
  * @param context - Contains route parameters including workout ID
  * @returns {Promise<NextResponse>} JSON response with workout data or error
  */
-export async function GET(
-  request: Request,
-  context: { params: { id: string } }
-) {
+export async function GET(request: Request, context: { params: { id: string } }) {
   const id = context.params.id;
 
   try {
@@ -25,62 +22,47 @@ export async function GET(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Fetch the workout with its label
     const workout = await prisma.workout.findUnique({
       where: { id },
-      include: { label: true }
+      include: { label: true },
     });
 
     // Check if workout exists
     if (!workout) {
-      return NextResponse.json(
-        { error: 'Workout not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Workout not found' }, { status: 404 });
     }
 
     // Check if the workout belongs to the current user
     // This prevents unauthorized access to other users' workouts
     if (workout.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     return NextResponse.json(workout);
   } catch (error) {
     console.error('Error fetching workout:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch workout' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch workout' }, { status: 500 });
   }
 }
 
 /**
  * PATCH Handler - Update a workout
- * 
+ *
  * Updates an existing workout with the provided data.
  * Verifies that the workout belongs to the authenticated user.
  * Authentication is required.
- * 
+ *
  * Note: labelId can be set to empty string to remove the label.
- * 
+ *
  * @route PATCH /api/workouts/:id
  * @param context - Contains route parameters including workout ID
  * @returns {Promise<NextResponse>} JSON response with updated workout or error
  */
-export async function PATCH(
-  request: Request,
-  context: { params: { id: string } }
-) {
+export async function PATCH(request: Request, context: { params: { id: string } }) {
   const id = context.params.id;
 
   try {
@@ -88,10 +70,7 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get the workout to check ownership
@@ -101,18 +80,12 @@ export async function PATCH(
 
     // Check if workout exists
     if (!existingWorkout) {
-      return NextResponse.json(
-        { error: 'Workout not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Workout not found' }, { status: 404 });
     }
 
     // Check if the workout belongs to the current user
     if (existingWorkout.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to modify this workout' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Unauthorized to modify this workout' }, { status: 403 });
     }
 
     const data = await request.json();
@@ -123,7 +96,7 @@ export async function PATCH(
     }
 
     // If labelId is empty string, set to null (remove label)
-    if (data.labelId === "") {
+    if (data.labelId === '') {
       data.labelId = null;
     }
 
@@ -131,46 +104,37 @@ export async function PATCH(
     const workout = await prisma.workout.update({
       where: { id },
       data,
-      include: { label: true } // Include the label in the response
+      include: { label: true }, // Include the label in the response
     });
 
     return NextResponse.json(workout);
   } catch (error) {
     console.error('Error updating workout:', error);
-    return NextResponse.json(
-      { error: 'Failed to update workout' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update workout' }, { status: 500 });
   }
 }
 
 /**
  * DELETE Handler - Delete a workout
- * 
+ *
  * Removes a workout from the database.
  * Verifies that the workout belongs to the authenticated user.
  * Authentication is required.
- * 
+ *
  * @route DELETE /api/workouts/:id
  * @param context - Contains route parameters including workout ID
  * @returns {Promise<NextResponse>} JSON response with success status or error
  */
-export async function DELETE(
-  request: Request,
-  context: { params: Record<string, string> }
-) {
+export async function DELETE(request: Request, context: { params: Record<string, string> }) {
   try {
     // Use bracket notation for extra safety with the params object
-    const workoutId = String(context.params["id"]);
+    const workoutId = String(context.params['id']);
 
     // Verify authentication
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Get the workout to check ownership
@@ -180,18 +144,12 @@ export async function DELETE(
 
     // Check if workout exists
     if (!existingWorkout) {
-      return NextResponse.json(
-        { error: 'Workout not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Workout not found' }, { status: 404 });
     }
 
     // Check if the workout belongs to the current user
     if (existingWorkout.userId !== session.user.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized to delete this workout' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Unauthorized to delete this workout' }, { status: 403 });
     }
 
     // Delete the workout from the database
@@ -202,9 +160,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting workout:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete workout' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete workout' }, { status: 500 });
   }
 }

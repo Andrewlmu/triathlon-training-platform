@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 /**
  * Create PrismaClient with custom configuration
- * 
+ *
  * @returns Configured PrismaClient instance
  */
 const prismaClientSingleton = () => {

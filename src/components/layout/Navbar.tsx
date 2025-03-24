@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { signOut, useSession } from "next-auth/react";
-import Link from "next/link";
-import { Calendar, LogOut, LogIn, User } from "lucide-react";
+import { signOut, useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { Calendar, LogOut, LogIn, User } from 'lucide-react';
 
 /**
  * Navbar Component
- * 
+ *
  * Main navigation header for the application.
  * Shows application branding and authentication controls.
  * Adapts UI based on authentication state.
- * 
+ *
  * @returns A responsive navigation bar component
  */
 export default function Navbar() {
   // Get authentication session data and status
   const { data: session, status } = useSession();
-  const isLoading = status === "loading";
+  const isLoading = status === 'loading';
 
   return (
     <header className="bg-[#1E1E1E] border-b border-[#333333]">
@@ -27,7 +27,7 @@ export default function Navbar() {
             <Calendar className="h-8 w-8 text-[#FFD700]" />
             <h1 className="text-2xl font-bold text-white">Triathlon Training</h1>
           </div>
-          
+
           {/* Authentication controls */}
           <div className="flex items-center gap-4">
             {isLoading ? (
@@ -41,7 +41,7 @@ export default function Navbar() {
                   <span>{session.user?.name || session.user?.email}</span>
                 </div>
                 <button
-                  onClick={() => signOut({ callbackUrl: "/" })}
+                  onClick={() => signOut({ callbackUrl: '/' })}
                   className="flex items-center gap-1 px-3 py-1.5 bg-[#252525] text-white rounded-md hover:bg-[#333333] transition"
                 >
                   <LogOut className="h-4 w-4" />

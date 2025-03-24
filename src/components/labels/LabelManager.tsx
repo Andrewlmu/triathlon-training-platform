@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { useLabels } from '@/context/LabelContext';
@@ -7,22 +7,25 @@ import { WorkoutLabel } from '@/types/workout';
 
 /**
  * LabelManager Component
- * 
+ *
  * Component for managing workout intensity labels.
  * Provides UI for creating, editing, deleting, and resetting workout labels.
  * Displays labels in a modal with color selection and name editing.
- * 
+ *
  * @returns A component for managing workout labels
  */
 export default function LabelManager() {
   // Get label data and functions from context
-  const { labels, isLoading, addLabel, updateLabel, deleteLabel, resetToDefaultLabels } = useLabels();
-  
+  const { labels, isLoading, addLabel, updateLabel, deleteLabel, resetToDefaultLabels } =
+    useLabels();
+
   // Local state for UI management
   const [showModal, setShowModal] = useState(false);
   const [newLabelName, setNewLabelName] = useState('');
   const [newLabelColor, setNewLabelColor] = useState('#3B82F6');
-  const [editMode, setEditMode] = useState<{ id: string; name: string; color: string } | null>(null);
+  const [editMode, setEditMode] = useState<{ id: string; name: string; color: string } | null>(
+    null
+  );
   const [isResetting, setIsResetting] = useState(false);
 
   /**
@@ -30,13 +33,13 @@ export default function LabelManager() {
    */
   const handleAddLabel = async () => {
     if (!newLabelName.trim()) return;
-    
+
     try {
       await addLabel({
         name: newLabelName.trim(),
-        color: newLabelColor
+        color: newLabelColor,
       });
-      
+
       // Reset form after adding
       setNewLabelName('');
       setNewLabelColor('#3B82F6');
@@ -50,13 +53,13 @@ export default function LabelManager() {
    */
   const handleUpdateLabel = async () => {
     if (!editMode || !editMode.name.trim()) return;
-    
+
     try {
       await updateLabel(editMode.id, {
         name: editMode.name.trim(),
-        color: editMode.color
+        color: editMode.color,
       });
-      
+
       // Exit edit mode after updating
       setEditMode(null);
     } catch (error) {
@@ -66,7 +69,7 @@ export default function LabelManager() {
 
   /**
    * Delete a label after confirmation
-   * 
+   *
    * @param id - ID of the label to delete
    */
   const handleDeleteLabel = async (id: string) => {
@@ -83,7 +86,11 @@ export default function LabelManager() {
    * Reset to default training zone labels after confirmation
    */
   const handleResetLabels = async () => {
-    if (window.confirm('Are you sure you want to reset to default labels? This will delete all your custom labels.')) {
+    if (
+      window.confirm(
+        'Are you sure you want to reset to default labels? This will delete all your custom labels.'
+      )
+    ) {
       try {
         setIsResetting(true);
         await resetToDefaultLabels();
@@ -106,7 +113,7 @@ export default function LabelManager() {
     '#DC2626', // Darker red (anaerobic)
     '#991B1B', // Darkest red (sprints)
     '#8B5CF6', // Purple
-    '#EC4899'  // Pink
+    '#EC4899', // Pink
   ];
 
   // Order labels by training intensity for consistent display
@@ -122,19 +129,19 @@ export default function LabelManager() {
       'Anaerobic',
       'Sprints',
     ];
-    
+
     const indexA = zoneOrder.indexOf(a.name);
     const indexB = zoneOrder.indexOf(b.name);
-    
+
     // If both labels are in predefined zones, sort by intensity
     if (indexA !== -1 && indexB !== -1) {
       return indexA - indexB;
     }
-    
+
     // If only one label is a standard zone, prioritize it
     if (indexA !== -1) return -1;
     if (indexB !== -1) return 1;
-    
+
     // Otherwise sort alphabetically
     return a.name.localeCompare(b.name);
   });
@@ -156,8 +163,8 @@ export default function LabelManager() {
             {/* Modal Header */}
             <div className="p-4 border-b border-[#333333] flex justify-between items-center">
               <h2 className="text-xl font-semibold text-white">Manage Labels</h2>
-              <button 
-                onClick={() => setShowModal(false)} 
+              <button
+                onClick={() => setShowModal(false)}
                 className="text-[#A0A0A0] hover:text-white transition"
               >
                 <X className="h-5 w-5" />
@@ -184,13 +191,16 @@ export default function LabelManager() {
                 ) : orderedLabels.length === 0 ? (
                   <p className="text-[#A0A0A0]">No labels yet. Create your first label below.</p>
                 ) : (
-                  orderedLabels.map(label => (
-                    <div key={label.id} className="flex items-center justify-between p-2 rounded bg-[#252525]">
+                  orderedLabels.map((label) => (
+                    <div
+                      key={label.id}
+                      className="flex items-center justify-between p-2 rounded bg-[#252525]"
+                    >
                       {editMode?.id === label.id ? (
                         /* Edit Mode UI */
                         <>
                           <div className="flex items-center gap-2 flex-grow">
-                            <div 
+                            <div
                               className="h-4 w-4 rounded-full"
                               style={{ backgroundColor: editMode.color }}
                             ></div>
@@ -203,7 +213,7 @@ export default function LabelManager() {
                           </div>
                           <div className="flex items-center gap-1">
                             <div className="flex gap-1 mr-2">
-                              {colorOptions.map(color => (
+                              {colorOptions.map((color) => (
                                 <button
                                   key={color}
                                   type="button"
@@ -233,7 +243,7 @@ export default function LabelManager() {
                         /* View Mode UI */
                         <>
                           <div className="flex items-center gap-2">
-                            <div 
+                            <div
                               className="h-4 w-4 rounded-full"
                               style={{ backgroundColor: label.color }}
                             ></div>
@@ -241,11 +251,13 @@ export default function LabelManager() {
                           </div>
                           <div className="flex items-center gap-1">
                             <button
-                              onClick={() => setEditMode({ 
-                                id: label.id, 
-                                name: label.name, 
-                                color: label.color 
-                              })}
+                              onClick={() =>
+                                setEditMode({
+                                  id: label.id,
+                                  name: label.name,
+                                  color: label.color,
+                                })
+                              }
                               className="p-1 text-[#A0A0A0] hover:text-white"
                             >
                               <Edit className="h-4 w-4" />
@@ -285,7 +297,7 @@ export default function LabelManager() {
                       className="sr-only"
                       id="color-picker"
                     />
-                    <div 
+                    <div
                       className="h-10 w-10 rounded-md cursor-pointer"
                       style={{ backgroundColor: newLabelColor }}
                       onClick={() => document.getElementById('color-picker')?.click()}
@@ -300,7 +312,7 @@ export default function LabelManager() {
                 </div>
                 {/* Color Palette Shortcuts */}
                 <div className="flex gap-1 mt-2">
-                  {colorOptions.map(color => (
+                  {colorOptions.map((color) => (
                     <button
                       key={color}
                       type="button"

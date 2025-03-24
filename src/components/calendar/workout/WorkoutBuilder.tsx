@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
@@ -7,7 +7,7 @@ import { useLabels } from '@/context/LabelContext';
 
 /**
  * WorkoutBuilderProps Interface
- * 
+ *
  * Props for the WorkoutBuilder component that creates or edits workouts
  */
 interface WorkoutBuilderProps {
@@ -19,7 +19,7 @@ interface WorkoutBuilderProps {
 
 /**
  * Convert hours (with decimals) to minutes
- * 
+ *
  * @param hours - Duration in hours (e.g., 1.5 for 1.5 hours)
  * @returns Number of minutes (e.g., 90 minutes)
  */
@@ -29,7 +29,7 @@ const hoursToMinutes = (hours: number): number => {
 
 /**
  * Convert minutes to hours formatted as a string with one decimal place
- * 
+ *
  * @param minutes - Duration in minutes
  * @returns Formatted hours string (e.g., "1.5")
  */
@@ -39,10 +39,10 @@ const minutesToHours = (minutes: number): string => {
 
 /**
  * WorkoutBuilder Component
- * 
+ *
  * Modal form for creating new workouts or editing existing ones.
  * Provides fields for all workout attributes: type, title, label, duration, and details.
- * 
+ *
  * @param date - The date for the workout
  * @param workout - Optional existing workout data (if editing)
  * @param onClose - Function to call when closing the form
@@ -79,7 +79,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
 
   /**
    * Validate and handle duration input, ensuring only valid numerical entries
-   * 
+   *
    * @param value - The input string from the duration field
    */
   const handleDurationInput = (value: string) => {
@@ -99,7 +99,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
   /**
    * Handle form submission
    * Creates a new workout object or updates an existing one
-   * 
+   *
    * @param e - Form submit event
    */
   const handleSubmit = (e: React.FormEvent) => {
@@ -108,7 +108,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
     const updatedWorkout: Workout = {
       id: workout?.id || Date.now().toString(),
       type: workoutType,
-      title: title.trim() || workoutType,  // Use type as title if not provided
+      title: title.trim() || workoutType, // Use type as title if not provided
       description,
       duration: hoursToMinutes(parseFloat(durationHours) || 0),
       date: date.toISOString(),
@@ -168,9 +168,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Workout Type Selection */}
           <div>
-            <label className="block text-sm font-medium text-white mb-1">
-              Type
-            </label>
+            <label className="block text-sm font-medium text-white mb-1">Type</label>
             <select
               value={workoutType}
               onChange={(e) => setWorkoutType(e.target.value as WorkoutType)}
@@ -184,9 +182,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
 
           {/* Workout Title Input */}
           <div>
-            <label className="block text-sm font-medium text-white mb-1">
-              Title
-            </label>
+            <label className="block text-sm font-medium text-white mb-1">Title</label>
             <input
               type="text"
               value={title}
@@ -198,9 +194,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
 
           {/* Workout Label Selection */}
           <div>
-            <label className="block text-sm font-medium text-white mb-1">
-              Label
-            </label>
+            <label className="block text-sm font-medium text-white mb-1">Label</label>
             <div className="relative">
               <select
                 value={labelId}
@@ -208,7 +202,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
                 className="w-full rounded-md border border-[#333333] bg-[#252525] p-2 text-white focus:ring-[#FFD700] focus:border-[#FFD700] focus:outline-none appearance-none"
               >
                 <option value="">No label</option>
-                {orderedLabels.map(label => (
+                {orderedLabels.map((label) => (
                   <option key={label.id} value={label.id}>
                     {label.name}
                   </option>
@@ -220,8 +214,8 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
                   className="h-4 w-4 rounded-full"
                   style={{
                     backgroundColor: labelId
-                      ? labels.find(l => l.id === labelId)?.color || 'transparent'
-                      : 'transparent'
+                      ? labels.find((l) => l.id === labelId)?.color || 'transparent'
+                      : 'transparent',
                   }}
                 ></div>
               </div>
@@ -230,9 +224,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
 
           {/* Duration Input */}
           <div>
-            <label className="block text-sm font-medium text-white mb-1">
-              Duration (hours)
-            </label>
+            <label className="block text-sm font-medium text-white mb-1">Duration (hours)</label>
             <input
               type="text"
               value={durationHours}
@@ -245,9 +237,7 @@ const WorkoutBuilder: React.FC<WorkoutBuilderProps> = ({ date, workout, onClose,
 
           {/* Workout Details Textarea */}
           <div>
-            <label className="block text-sm font-medium text-white mb-1">
-              Workout Details
-            </label>
+            <label className="block text-sm font-medium text-white mb-1">Workout Details</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}

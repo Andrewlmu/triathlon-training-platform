@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Workout } from '@/types/workout';
@@ -58,7 +58,7 @@ export function useWorkoutStore(): WorkoutStore {
     if (isInitialized && typeof window !== 'undefined') {
       localStorage.setItem('workouts', JSON.stringify(workouts));
       // Increment version to notify subscribers of a change
-      setVersion(v => v + 1);
+      setVersion((v) => v + 1);
     }
   }, [workouts, isInitialized]);
 
@@ -69,11 +69,11 @@ export function useWorkoutStore(): WorkoutStore {
    */
   const addWorkout = (date: Date, workout: Workout) => {
     const dateKey = getDateKey(date);
-    setWorkouts(prev => {
+    setWorkouts((prev) => {
       const existingWorkouts = prev[dateKey] || [];
       return {
         ...prev,
-        [dateKey]: [...existingWorkouts, workout]
+        [dateKey]: [...existingWorkouts, workout],
       };
     });
   };
@@ -86,13 +86,13 @@ export function useWorkoutStore(): WorkoutStore {
    */
   const updateWorkout = (date: Date, workoutId: string, updatedWorkout: Workout) => {
     const dateKey = getDateKey(date);
-    setWorkouts(prev => {
+    setWorkouts((prev) => {
       const existingWorkouts = prev[dateKey] || [];
       return {
         ...prev,
-        [dateKey]: existingWorkouts.map(workout => 
+        [dateKey]: existingWorkouts.map((workout) =>
           workout.id === workoutId ? updatedWorkout : workout
-        )
+        ),
       };
     });
   };
@@ -104,11 +104,11 @@ export function useWorkoutStore(): WorkoutStore {
    */
   const deleteWorkout = (date: Date, workoutId: string) => {
     const dateKey = getDateKey(date);
-    setWorkouts(prev => {
+    setWorkouts((prev) => {
       const existingWorkouts = prev[dateKey] || [];
       return {
         ...prev,
-        [dateKey]: existingWorkouts.filter(workout => workout.id !== workoutId)
+        [dateKey]: existingWorkouts.filter((workout) => workout.id !== workoutId),
       };
     });
   };
@@ -122,20 +122,20 @@ export function useWorkoutStore(): WorkoutStore {
   const moveWorkout = (fromDate: Date, toDate: Date, workoutId: string) => {
     const fromDateKey = getDateKey(fromDate);
     const toDateKey = getDateKey(toDate);
-    
-    setWorkouts(prev => {
+
+    setWorkouts((prev) => {
       const fromWorkouts = prev[fromDateKey] || [];
       const toWorkouts = prev[toDateKey] || [];
-      
+
       // Find the workout to move
-      const workoutToMove = fromWorkouts.find(w => w.id === workoutId);
+      const workoutToMove = fromWorkouts.find((w) => w.id === workoutId);
       if (!workoutToMove) return prev;
-      
+
       // Return updated state with workout moved to new date
       return {
         ...prev,
-        [fromDateKey]: fromWorkouts.filter(w => w.id !== workoutId),
-        [toDateKey]: [...toWorkouts, { ...workoutToMove, date: toDate.toISOString() }]
+        [fromDateKey]: fromWorkouts.filter((w) => w.id !== workoutId),
+        [toDateKey]: [...toWorkouts, { ...workoutToMove, date: toDate.toISOString() }],
       };
     });
   };

@@ -19,24 +19,20 @@ export const metadata: Metadata = {
 
 /**
  * Root Layout Component
- * 
+ *
  * The main layout component that wraps the entire application.
  * Sets up global providers for authentication, labels, and workouts.
  * Applies font styling and provides the basic HTML structure.
- * 
+ *
  * Provider hierarchy:
  * 1. AuthProvider - Provides authentication state and functions
  * 2. LabelProvider - Provides workout label management
  * 3. WorkoutProvider - Provides workout data and operations
- * 
+ *
  * @param children - Child components/pages to render within the layout
  * @returns The root layout component with all necessary providers
  */
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={inter.className}>
@@ -45,9 +41,7 @@ export default function RootLayout({
           {/* Label management provider */}
           <LabelProvider>
             {/* Workout data provider */}
-            <WorkoutProvider>
-              {children}
-            </WorkoutProvider>
+            <WorkoutProvider>{children}</WorkoutProvider>
           </LabelProvider>
         </AuthProvider>
       </body>

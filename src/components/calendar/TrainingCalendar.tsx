@@ -1,8 +1,19 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, addMonths, isToday, isSameDay } from "date-fns";
-import { Bike, Waves, Footprints, Plus, Calendar, Copy } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  isSameMonth,
+  addMonths,
+  isToday,
+  isSameDay,
+} from 'date-fns';
+import { Bike, Waves, Footprints, Plus, Calendar, Copy } from 'lucide-react';
 import {
   DndContext,
   DragEndEvent,
@@ -13,29 +24,24 @@ import {
   useSensors,
   closestCenter,
   useDroppable,
-  DragOverlay
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  arrayMove,
-  rectSortingStrategy,
-  useSortable
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+  DragOverlay,
+} from '@dnd-kit/core';
+import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
-import WorkoutBuilder from "./workout/WorkoutBuilder";
-import WorkoutDisplay from "./workout/WorkoutDisplay";
-import CopyWeekModal from "./CopyWeekModal";
-import { Workout, WorkoutType } from "@/types/workout";
-import { useWorkouts } from "@/context/WorkoutContext";
-import { useLabels } from "@/context/LabelContext";
+import WorkoutBuilder from './workout/WorkoutBuilder';
+import WorkoutDisplay from './workout/WorkoutDisplay';
+import CopyWeekModal from './CopyWeekModal';
+import { Workout, WorkoutType } from '@/types/workout';
+import { useWorkouts } from '@/context/WorkoutContext';
+import { useLabels } from '@/context/LabelContext';
 
 /**
  * DroppableDay Component
- * 
+ *
  * Creates a droppable target area for each calendar day in the drag-and-drop system.
  * Each day becomes a drop zone where workouts can be dragged to.
- * 
+ *
  * @param id - Unique identifier for the droppable area
  * @param children - Child components to render within the droppable area
  * @param className - Additional CSS classes to apply
@@ -46,7 +52,7 @@ const DroppableDay = ({
   id,
   children,
   className,
-  isActive
+  isActive,
 }: {
   id: string;
   children: React.ReactNode;
@@ -68,40 +74,43 @@ const DroppableDay = ({
 
 /**
  * SortableWorkoutItem Component
- * 
+ *
  * Renders a workout item that can be dragged, sorted, and reordered within the calendar.
  * Displays workout information with appropriate styling based on workout type and label.
- * 
+ *
  * @param workout - The workout data to display
  * @param onClick - Callback function when the workout item is clicked
  * @param labels - Array of available workout labels for styling
  * @returns A draggable workout component with type icon, title and duration
  */
-const SortableWorkoutItem = ({ workout, onClick, labels }: { workout: Workout; onClick: () => void; labels: any[] }) => {
+const SortableWorkoutItem = ({
+  workout,
+  onClick,
+  labels,
+}: {
+  workout: Workout;
+  onClick: () => void;
+  labels: any[];
+}) => {
   // Set up sortable functionality using dnd-kit
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id: workout.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: workout.id,
+  });
 
   // Find the label for this workout if it has one
-  const workoutLabel = workout.labelId
-    ? labels.find(l => l.id === workout.labelId)
-    : null;
+  const workoutLabel = workout.labelId ? labels.find((l) => l.id === workout.labelId) : null;
 
   // Prepare styling based on dragging state and workout label
   const style = {
     transition,
     transform: CSS.Transform.toString(transform),
     opacity: isDragging ? 0.5 : 1,
-    ...(workoutLabel ? {
-      backgroundColor: `${workoutLabel.color}66`,
-      borderLeftColor: workoutLabel.color
-    } : {})
+    ...(workoutLabel
+      ? {
+          backgroundColor: `${workoutLabel.color}66`,
+          borderLeftColor: workoutLabel.color,
+        }
+      : {}),
   };
 
   /**
@@ -121,11 +130,11 @@ const SortableWorkoutItem = ({ workout, onClick, labels }: { workout: Workout; o
    */
   const getWorkoutIcon = (type: WorkoutType) => {
     switch (type) {
-      case "Swim":
+      case 'Swim':
         return <Waves className="h-4 w-4 text-[#00CED1]" />;
-      case "Bike":
+      case 'Bike':
         return <Bike className="h-4 w-4 text-[#1E90FF]" />;
-      case "Run":
+      case 'Run':
         return <Footprints className="h-4 w-4 text-[#E63946]" />;
     }
   };
@@ -144,7 +153,9 @@ const SortableWorkoutItem = ({ workout, onClick, labels }: { workout: Workout; o
       <div className="flex items-center gap-1 w-full overflow-hidden">
         {getWorkoutIcon(workout.type)}
         <span className="font-medium text-white truncate">{workout.title}</span>
-        <span className="ml-auto text-[#A0A0A0] whitespace-nowrap">{formatDuration(workout.duration)}</span>
+        <span className="ml-auto text-[#A0A0A0] whitespace-nowrap">
+          {formatDuration(workout.duration)}
+        </span>
       </div>
     </div>
   );
@@ -152,10 +163,10 @@ const SortableWorkoutItem = ({ workout, onClick, labels }: { workout: Workout; o
 
 /**
  * DayContainer Component
- * 
+ *
  * Renders a single day cell in the calendar with all associated workouts.
  * Handles the layout of workouts within a day and provides UI for adding new workouts.
- * 
+ *
  * @param day - The date object representing this day
  * @param workouts - Array of workouts scheduled for this day
  * @param isCurrentDay - Whether this is the current day (today)
@@ -172,7 +183,7 @@ const DayContainer = ({
   onAddWorkout,
   onSelectWorkout,
   totalDuration,
-  labels
+  labels,
 }: {
   day: Date;
   workouts: Workout[];
@@ -180,7 +191,7 @@ const DayContainer = ({
   onAddWorkout: () => void;
   onSelectWorkout: (workout: Workout) => void;
   totalDuration: number;
-  labels: any[]
+  labels: any[];
 }) => {
   // Create unique identifier for this day's drop target
   const dayId = `day-${format(day, 'yyyy-MM-dd')}`;
@@ -199,9 +210,14 @@ const DayContainer = ({
     <div className="h-full flex flex-col">
       {/* Day Number and Total Duration */}
       <div className="flex justify-between items-start mb-1">
-        <span className={`text-sm font-medium text-white ${isCurrentDay ? "bg-[#FFD700] text-[#121212] w-6 h-6 rounded-full flex items-center justify-center" : ""
-          }`}>
-          {format(day, "d")}
+        <span
+          className={`text-sm font-medium text-white ${
+            isCurrentDay
+              ? 'bg-[#FFD700] text-[#121212] w-6 h-6 rounded-full flex items-center justify-center'
+              : ''
+          }`}
+        >
+          {format(day, 'd')}
         </span>
         {totalDuration > 0 && (
           <span className="text-xs px-1.5 py-0.5 bg-[#252525] rounded text-[#A0A0A0] font-medium">
@@ -212,7 +228,7 @@ const DayContainer = ({
 
       {/* Sortable Area - Container for the day's workouts */}
       <div className="mt-1 space-y-1.5 flex-grow overflow-y-auto max-h-28">
-        <SortableContext items={workouts.map(w => w.id)} strategy={rectSortingStrategy}>
+        <SortableContext items={workouts.map((w) => w.id)} strategy={rectSortingStrategy}>
           {workouts.map((workout) => (
             <SortableWorkoutItem
               key={workout.id}
@@ -238,17 +254,17 @@ const DayContainer = ({
 
 /**
  * TrainingCalendar Component
- * 
+ *
  * Main calendar interface component for the triathlon training platform.
  * Provides a monthly calendar view with drag-and-drop workout management,
  * workout creation/editing, and week copying functionality.
- * 
+ *
  * Features:
  * - Monthly calendar navigation
  * - Drag and drop workout management
  * - Workout creation, editing, and viewing
  * - Copy week functionality for repeating training blocks
- * 
+ *
  * @returns A fully interactive training calendar component
  */
 const TrainingCalendar = () => {
@@ -262,7 +278,8 @@ const TrainingCalendar = () => {
   const [showCopyWeekModal, setShowCopyWeekModal] = useState(false);
 
   // Get workout data and functions from context
-  const { workouts, isLoading, addWorkout, updateWorkout, deleteWorkout, reorderWorkouts } = useWorkouts();
+  const { workouts, isLoading, addWorkout, updateWorkout, deleteWorkout, reorderWorkouts } =
+    useWorkouts();
   const { labels } = useLabels();
 
   // Configure sensors for drag and drop
@@ -306,7 +323,7 @@ const TrainingCalendar = () => {
 
   /**
    * Handle saving a new workout or updating an existing one
-   * 
+   *
    * @param date - The date to save the workout on
    * @param workout - The workout data to save
    */
@@ -314,7 +331,7 @@ const TrainingCalendar = () => {
     try {
       const workoutData = {
         ...workout,
-        date: date.toISOString()
+        date: date.toISOString(),
       };
 
       if (editingWorkout) {
@@ -330,8 +347,8 @@ const TrainingCalendar = () => {
   };
 
   /**
-   * Handle deleting a workout 
-   * 
+   * Handle deleting a workout
+   *
    * @param workoutId - The ID of the workout to delete
    */
   const handleDeleteWorkout = async (workoutId: string) => {
@@ -351,7 +368,7 @@ const TrainingCalendar = () => {
 
   /**
    * Calculate the total duration of all workouts for a day
-   * 
+   *
    * @param workouts - Array of workouts for a day
    * @returns Total duration in minutes
    */
@@ -361,13 +378,13 @@ const TrainingCalendar = () => {
 
   /**
    * Get workouts for a specific date
-   * 
+   *
    * @param date - The date to get workouts for
    * @returns Array of workouts for that date, sorted by order
    */
   const getWorkoutsForDay = (date: Date): Workout[] => {
     // Filter workouts that match this specific day
-    const filteredWorkouts = workouts.filter(workout => {
+    const filteredWorkouts = workouts.filter((workout) => {
       const workoutDate = new Date(workout.date);
       return (
         workoutDate.getFullYear() === date.getFullYear() &&
@@ -382,7 +399,7 @@ const TrainingCalendar = () => {
 
   /**
    * Generate a unique droppable ID for a day
-   * 
+   *
    * @param date - The date to generate an ID for
    * @returns A unique string ID for the day
    */
@@ -393,7 +410,7 @@ const TrainingCalendar = () => {
   /**
    * Handle the start of a drag operation
    * Tracks which workout is being dragged and from which day
-   * 
+   *
    * @param event - The drag start event
    */
   const handleDragStart = (event: DragStartEvent) => {
@@ -401,7 +418,7 @@ const TrainingCalendar = () => {
     const workoutId = active.id as string;
 
     // Find the dragged workout
-    const workout = workouts.find(w => w.id === workoutId);
+    const workout = workouts.find((w) => w.id === workoutId);
     if (workout) {
       // Store the active workout for the drag overlay
       setActiveWorkout(workout);
@@ -415,7 +432,7 @@ const TrainingCalendar = () => {
   /**
    * Handle the end of a drag operation
    * Manages reordering workouts within a day or moving workouts between days
-   * 
+   *
    * @param event - The drag end event
    */
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -432,7 +449,7 @@ const TrainingCalendar = () => {
     const targetId = over.id;
 
     // Find the dragged workout
-    const draggedWorkout = workouts.find(w => w.id === workoutId);
+    const draggedWorkout = workouts.find((w) => w.id === workoutId);
     if (!draggedWorkout) {
       console.error('Could not find dragged workout');
       return;
@@ -455,7 +472,7 @@ const TrainingCalendar = () => {
       destinationDayId = targetId as string;
     } else {
       // If dropped on a workout, find which day it belongs to
-      const targetWorkout = workouts.find(w => w.id === targetId);
+      const targetWorkout = workouts.find((w) => w.id === targetId);
       if (!targetWorkout) {
         console.error('Could not find target workout');
         return;
@@ -484,12 +501,11 @@ const TrainingCalendar = () => {
 
     // Handle same day reordering
     if (sourceDayId === destinationDayId) {
-
       // Only reorder if dropped on another workout
       if (isTargetWorkout) {
         // Find the source and target positions within the day's workouts
-        const sourceIndex = sourceWorkouts.findIndex(w => w.id === workoutId);
-        const targetIndex = sourceWorkouts.findIndex(w => w.id === targetId);
+        const sourceIndex = sourceWorkouts.findIndex((w) => w.id === workoutId);
+        const targetIndex = sourceWorkouts.findIndex((w) => w.id === targetId);
 
         if (sourceIndex === -1 || targetIndex === -1) {
           console.error('Invalid source or target index');
@@ -502,13 +518,12 @@ const TrainingCalendar = () => {
         // Update the order property for all workouts in the day to match their new positions
         updatedWorkouts = reorderedWorkouts.map((workout, index) => ({
           id: workout.id,
-          order: index
+          order: index,
         }));
       }
     } else {
-
       // Handle source day - remove workout
-      const sourceIndex = sourceWorkouts.findIndex(w => w.id === workoutId);
+      const sourceIndex = sourceWorkouts.findIndex((w) => w.id === workoutId);
       if (sourceIndex === -1) {
         console.error('Could not find workout in source day');
         return;
@@ -521,7 +536,7 @@ const TrainingCalendar = () => {
       // Update order properties for remaining workouts in source day
       const sourceUpdates = updatedSourceWorkouts.map((workout, index) => ({
         id: workout.id,
-        order: index
+        order: index,
       }));
 
       // Handle destination day - add workout
@@ -532,7 +547,7 @@ const TrainingCalendar = () => {
 
       if (isTargetWorkout) {
         // If dropped on a specific workout, insert at that position
-        const targetIndex = destinationWorkouts.findIndex(w => w.id === targetId);
+        const targetIndex = destinationWorkouts.findIndex((w) => w.id === targetId);
         insertIndex = targetIndex !== -1 ? targetIndex : destinationWorkouts.length;
       } else {
         // If dropped on the day container, add to the end
@@ -543,7 +558,7 @@ const TrainingCalendar = () => {
       const updatedDestWorkouts = [...destinationWorkouts];
       updatedDestWorkouts.splice(insertIndex, 0, {
         ...draggedWorkout,
-        date: formattedDestinationDate
+        date: formattedDestinationDate,
       });
 
       // Update order properties and date for workouts in destination day
@@ -551,7 +566,7 @@ const TrainingCalendar = () => {
         id: workout.id,
         order: index,
         // Only update date for the moved workout
-        date: workout.id === workoutId ? formattedDestinationDate : undefined
+        date: workout.id === workoutId ? formattedDestinationDate : undefined,
       }));
 
       // Combine all updates from source and destination days
@@ -573,14 +588,14 @@ const TrainingCalendar = () => {
   /**
    * Render function for drag overlay
    * Creates a visual representation of the workout being dragged
-   * 
+   *
    * @returns A styled representation of the active workout for drag overlay
    */
   const renderDragOverlay = () => {
     if (!activeWorkout) return null;
 
     const workoutLabel = activeWorkout.labelId
-      ? labels.find(l => l.id === activeWorkout.labelId)
+      ? labels.find((l) => l.id === activeWorkout.labelId)
       : null;
 
     const formatDuration = (minutes: number): string => {
@@ -590,11 +605,11 @@ const TrainingCalendar = () => {
 
     const getWorkoutIcon = (type: WorkoutType) => {
       switch (type) {
-        case "Swim":
+        case 'Swim':
           return <Waves className="h-4 w-4 text-[#00CED1]" />;
-        case "Bike":
+        case 'Bike':
           return <Bike className="h-4 w-4 text-[#1E90FF]" />;
-        case "Run":
+        case 'Run':
           return <Footprints className="h-4 w-4 text-[#E63946]" />;
       }
     };
@@ -603,15 +618,21 @@ const TrainingCalendar = () => {
       <div
         className={`flex items-center text-xs p-1.5 rounded-sm border-l-2 shadow-md
           ${!workoutLabel ? 'bg-white bg-opacity-5 border-white' : ''}`}
-        style={workoutLabel ? {
-          backgroundColor: `${workoutLabel.color}1A`,
-          borderLeftColor: workoutLabel.color
-        } : {}}
+        style={
+          workoutLabel
+            ? {
+                backgroundColor: `${workoutLabel.color}1A`,
+                borderLeftColor: workoutLabel.color,
+              }
+            : {}
+        }
       >
         <div className="flex items-center gap-1 w-full overflow-hidden">
           {getWorkoutIcon(activeWorkout.type)}
           <span className="font-medium text-white truncate">{activeWorkout.title}</span>
-          <span className="ml-auto text-[#A0A0A0] whitespace-nowrap">{formatDuration(activeWorkout.duration)}</span>
+          <span className="ml-auto text-[#A0A0A0] whitespace-nowrap">
+            {formatDuration(activeWorkout.duration)}
+          </span>
         </div>
       </div>
     );
@@ -621,7 +642,7 @@ const TrainingCalendar = () => {
     <div className="w-full max-w-4xl mx-auto bg-[#121212] rounded-lg shadow-xl">
       {/* Calendar Header with Navigation */}
       <div className="p-4 flex items-center justify-between border-b border-[#333333] bg-[#1E1E1E]">
-        <h2 className="text-lg font-bold text-white">{format(currentMonth, "MMMM yyyy")}</h2>
+        <h2 className="text-lg font-bold text-white">{format(currentMonth, 'MMMM yyyy')}</h2>
         <div className="flex gap-2">
           <button
             onClick={() => setShowCopyWeekModal(true)}
@@ -665,8 +686,13 @@ const TrainingCalendar = () => {
       >
         {/* Weekday Headers */}
         <div className="grid grid-cols-7 border-b border-[#333333]">
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-            <div key={day} className="p-2 text-center text-sm font-semibold text-[#A0A0A0] bg-[#1E1E1E]">{day}</div>
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+            <div
+              key={day}
+              className="p-2 text-center text-sm font-semibold text-[#A0A0A0] bg-[#1E1E1E]"
+            >
+              {day}
+            </div>
           ))}
 
           {/* Calendar Days Grid */}
@@ -683,10 +709,7 @@ const TrainingCalendar = () => {
                 id={dayId}
                 isActive={isActive}
                 className={`min-h-32 p-2 border border-[#333333] relative 
-                  ${isSameMonth(day, currentMonth)
-                    ? "bg-[#1E1E1E]"
-                    : "bg-[#121212] text-[#666666]"
-                  }
+                  ${isSameMonth(day, currentMonth) ? 'bg-[#1E1E1E]' : 'bg-[#121212] text-[#666666]'}
                 `}
               >
                 <DayContainer
@@ -739,11 +762,7 @@ const TrainingCalendar = () => {
       )}
 
       {/* Copy Week Modal */}
-      {showCopyWeekModal && (
-        <CopyWeekModal
-          onClose={() => setShowCopyWeekModal(false)}
-        />
-      )}
+      {showCopyWeekModal && <CopyWeekModal onClose={() => setShowCopyWeekModal(false)} />}
     </div>
   );
 };

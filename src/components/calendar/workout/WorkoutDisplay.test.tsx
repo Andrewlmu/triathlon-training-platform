@@ -32,15 +32,15 @@ describe('WorkoutDisplay', () => {
     duration: 90,
     date: '2025-03-15T08:00:00.000Z',
     userId: 'user-123',
-    order: 0
+    order: 0,
   };
-  
+
   // Mock label data
   const mockLabel = {
     id: 'label-123',
     name: 'Sweet Spot',
     color: '#F0C800',
-    userId: 'user-123'
+    userId: 'user-123',
   };
 
   // Mock the close and edit functions
@@ -56,80 +56,58 @@ describe('WorkoutDisplay', () => {
   beforeEach(() => {
     // Set up mocks before each test
     (useWorkouts as jest.Mock).mockReturnValue({
-      deleteWorkout: mockDeleteWorkout
+      deleteWorkout: mockDeleteWorkout,
     });
-    
+
     (useLabels as jest.Mock).mockReturnValue({
-      labels: [mockLabel]
+      labels: [mockLabel],
     });
-    
+
     // Clear mocks
     jest.clearAllMocks();
   });
 
   it('renders the workout title and details', () => {
-    render(
-      <WorkoutDisplay 
-        workout={mockWorkout} 
-        onClose={mockOnClose} 
-        onEdit={mockOnEdit} 
-      />
-    );
-    
+    render(<WorkoutDisplay workout={mockWorkout} onClose={mockOnClose} onEdit={mockOnEdit} />);
+
     // Check that the workout title is displayed
     expect(screen.getByText('Sweet Spot Intervals')).toBeInTheDocument();
-    
+
     // Check that the description is displayed
-    expect(screen.getByText('4x10 minutes at 90% FTP with 5 minute recoveries')).toBeInTheDocument();
+    expect(
+      screen.getByText('4x10 minutes at 90% FTP with 5 minute recoveries')
+    ).toBeInTheDocument();
   });
 
   it('calls onClose when close button is clicked', () => {
-    render(
-      <WorkoutDisplay 
-        workout={mockWorkout} 
-        onClose={mockOnClose} 
-        onEdit={mockOnEdit} 
-      />
-    );
-    
+    render(<WorkoutDisplay workout={mockWorkout} onClose={mockOnClose} onEdit={mockOnEdit} />);
+
     // Find and click the close button
     const closeButton = screen.getByRole('button', { name: /close/i });
     fireEvent.click(closeButton);
-    
+
     // Check that onClose was called
     expect(mockOnClose).toHaveBeenCalled();
   });
 
   it('calls onEdit when edit button is clicked', () => {
-    render(
-      <WorkoutDisplay 
-        workout={mockWorkout} 
-        onClose={mockOnClose} 
-        onEdit={mockOnEdit} 
-      />
-    );
-    
+    render(<WorkoutDisplay workout={mockWorkout} onClose={mockOnClose} onEdit={mockOnEdit} />);
+
     // Find and click the edit button
     const editButton = screen.getByRole('button', { name: /edit/i });
     fireEvent.click(editButton);
-    
+
     // Check that onEdit was called
     expect(mockOnEdit).toHaveBeenCalled();
   });
 
   it('deletes the workout when delete button is clicked', () => {
-    render(
-      <WorkoutDisplay 
-        workout={mockWorkout} 
-        onClose={mockOnClose} 
-        onEdit={mockOnEdit} 
-      />
-    );
-    
+    render(<WorkoutDisplay workout={mockWorkout} onClose={mockOnClose} onEdit={mockOnEdit} />);
+
     // Find and click the delete button
     const deleteButton = screen.getByRole('button', { name: /delete/i });
     fireEvent.click(deleteButton);
-    
+
     // Check that deleteWorkout was called with the correct workout ID
     expect(mockDeleteWorkout).toHaveBeenCalledWith('workout-123');
     // Check that onClose was called after deletion
@@ -139,17 +117,11 @@ describe('WorkoutDisplay', () => {
   it('displays the label when workout has a label', () => {
     const workoutWithLabel = {
       ...mockWorkout,
-      labelId: 'label-123'
+      labelId: 'label-123',
     };
-    
-    render(
-      <WorkoutDisplay 
-        workout={workoutWithLabel} 
-        onClose={mockOnClose} 
-        onEdit={mockOnEdit} 
-      />
-    );
-    
+
+    render(<WorkoutDisplay workout={workoutWithLabel} onClose={mockOnClose} onEdit={mockOnEdit} />);
+
     // Check that the label name is displayed
     expect(screen.getByText('Sweet Spot')).toBeInTheDocument();
   });

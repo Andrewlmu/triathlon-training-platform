@@ -1,36 +1,36 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcrypt";
-import prisma from "@/lib/prisma";
-import { NextAuthOptions } from "next-auth";
+import { PrismaAdapter } from '@auth/prisma-adapter';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import bcrypt from 'bcrypt';
+import prisma from '@/lib/prisma';
+import { NextAuthOptions } from 'next-auth';
 
 /**
  * NextAuth Configuration
- * 
+ *
  * Defines authentication settings for the application including:
  * - Custom credential authentication with email/password
  * - Prisma adapter for database integration
  * - JWT session handling
  * - Custom callbacks for adding user ID to session
- * 
+ *
  * @type {NextAuthOptions}
  */
 export const authOptions: NextAuthOptions = {
   // Use Prisma adapter to connect NextAuth with our database
   adapter: PrismaAdapter(prisma),
-  
+
   // Define authentication providers
   providers: [
     // Email/password authentication
     CredentialsProvider({
-      name: "Credentials",
+      name: 'Credentials',
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       /**
        * Authorize user login by checking credentials against database
-       * 
+       *
        * @param credentials - Email and password from login form
        * @returns User object if authentication succeeds, null otherwise
        */
@@ -43,7 +43,7 @@ export const authOptions: NextAuthOptions = {
         // Find the user by email
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-          include: { userCredential: true }
+          include: { userCredential: true },
         });
 
         // Check if user exists and has password credentials
@@ -65,23 +65,23 @@ export const authOptions: NextAuthOptions = {
         return {
           id: user.id,
           email: user.email,
-          name: user.name
+          name: user.name,
         };
-      }
-    })
+      },
+    }),
   ],
-  
+
   // Use JWT strategy for session handling
   session: {
-    strategy: "jwt"
+    strategy: 'jwt',
   },
-  
+
   // Callbacks to customize session and token behavior
   callbacks: {
     /**
      * Add user ID to session object from JWT token
      * Allows components to access user ID from session
-     * 
+     *
      * @param params - Session and token objects
      * @returns Modified session object with user ID
      */
@@ -90,14 +90,14 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub;
       }
       return session;
-    }
+    },
   },
-  
+
   // Custom pages for authentication flows
   pages: {
     signIn: '/auth/signin',
   },
-  
+
   // Secret used for JWT signing and encryption
   secret: process.env.NEXTAUTH_SECRET,
 };
