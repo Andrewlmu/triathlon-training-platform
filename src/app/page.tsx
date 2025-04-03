@@ -1,5 +1,5 @@
 import TrainingCalendar from '@/components/calendar/TrainingCalendar';
-import WeeklySummary from '@/components/calendar/WeeklySummary';
+import WeeklySummary from '@/components/calendar/weekly-summary';
 import Navbar from '@/components/layout/Navbar';
 import LabelManager from '@/components/labels/LabelManager';
 
